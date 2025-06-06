@@ -136,16 +136,27 @@ app.get('/health', (req, res) => {
 
 console.log('✅ Enhanced health route confirmed working - Phase 3 baseline');
 
-// SURGICAL DEBUGGING: NO PHASE 4 FEATURES YET
-// Will add Phase 4 features individually in next iterations:
-// 1. Static file serving (TEST FIRST)
-// 2. Next.js catch-all route (ALREADY FIXED)
-// 3. 404 handlers (POTENTIAL MALFORMED ROUTE)
-// 4. Error handlers (POTENTIAL MALFORMED ROUTE)
+// SURGICAL DEBUGGING: PHASE 4A - STATIC FILE SERVING (FIRST INDIVIDUAL TEST)
+console.log('🔬 TESTING: Phase 4A - Static file serving individually');
 
-console.log('🔬 PHASE 3 BASELINE ESTABLISHED - NO PHASE 4 FEATURES');
-console.log('📋 Next: Add static file serving individually');
-console.log('🎯 Goal: Isolate ALL malformed route patterns');
+if (NODE_ENV === 'production') {
+  // Serve Next.js static files in production
+  app.use(express.static(path.join(__dirname, '../.next/static')));
+  app.use(express.static(path.join(__dirname, '../public')));
+  console.log('✅ Phase 4A: Static file serving added for production');
+} else {
+  console.log('⏭️ Phase 4A: Static file serving skipped (development mode)');
+}
+
+// SURGICAL DEBUGGING: NO OTHER PHASE 4 FEATURES YET
+// Will add individually in next iterations:
+// 4B. Next.js catch-all route (ALREADY FIXED)
+// 4C. 404 handlers (POTENTIAL MALFORMED ROUTE)  
+// 4D. Error handlers (POTENTIAL MALFORMED ROUTE)
+
+console.log('🔬 PHASE 4A ONLY: Static file serving test');
+console.log('📋 Next: Test if static serving has malformed routes');
+console.log('🎯 Goal: Isolate each malformed route pattern individually');
 
 // Start server with Phase 3 baseline
 app.listen(PORT, () => {
