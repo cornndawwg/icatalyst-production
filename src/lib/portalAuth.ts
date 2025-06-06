@@ -1,8 +1,13 @@
-import jwt from 'jsonwebtoken';
+import * as jwt from 'jsonwebtoken';
 import crypto from 'crypto';
 
 const JWT_SECRET = process.env.JWT_SECRET || 'fallback-secret-change-in-production';
 const PORTAL_TOKEN_EXPIRY = '30d'; // 30 days
+
+// Ensure JWT_SECRET is always a string
+if (!JWT_SECRET) {
+  throw new Error('JWT_SECRET environment variable is required');
+}
 
 export interface PortalTokenPayload {
   proposalId: string;
@@ -48,7 +53,7 @@ export function generatePortalToken(
     expiresAt: expiresAt.getTime(),
   };
 
-  const token = jwt.sign(payload, JWT_SECRET, { expiresIn: expiry });
+  const token = jwt.sign(payload, JWT_SECRET, { expiresIn: expiry } as jwt.SignOptions);
   
   // Generate clean URL-safe token
   const urlSafeToken = Buffer.from(token).toString('base64url');
