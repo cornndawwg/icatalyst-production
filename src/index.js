@@ -173,23 +173,24 @@ if (NODE_ENV === 'production') {
   // ✅ "(.*)" - Regex pattern alternative
   // ✅ "/:param*" - Named parameter with wildcard
   
-  // USING ALTERNATIVE DOCUMENTED PATTERN: "(.*)" - REGEX SYNTAX
-  // Testing if "*" pattern has compatibility issues with path-to-regexp version
-  app.get('(.*)', function(req, res) {
+  // EXPRESS-COMPATIBLE PATTERN: Using parameter wildcard syntax
+  // Testing Express-native catch-all pattern to resolve path-to-regexp error
+  app.get('/:path*', function(req, res) {
     // Verified clean handler function
     res.status(404).json({
-      error: 'Route not found',
-      message: 'PATH-TO-REGEXP compliant catch-all route',
-      requested_path: req.path,
-      method: req.method,
-      available_endpoints: ['/', '/api', '/health'],
-      phase: 'Phase 4B: PATH-TO-REGEXP COMPLIANT Testing',
-      documentation_applied: 'Official path-to-regexp patterns',
+              error: 'Route not found',
+        message: 'Express-compatible catch-all route',
+        requested_path: req.path,
+        captured_path: req.params.path,
+        method: req.method,
+        available_endpoints: ['/', '/api', '/health'],
+        phase: 'Phase 4B: EXPRESS-COMPATIBLE Testing',
+        pattern_applied: 'Express parameter wildcard /:path*',
       timestamp: new Date().toISOString()
     });
   });
   
-  console.log('✅ PATH-TO-REGEXP COMPLIANT: catch-all route (.*) - REGEX PATTERN SYNTAX');
+  console.log('✅ EXPRESS-COMPATIBLE: catch-all route /:path* - PARAMETER WILDCARD SYNTAX');
 } else {
   console.log('⏭️ Phase 4B: PATH-TO-REGEXP compliant catch-all skipped (development mode)');
 }
