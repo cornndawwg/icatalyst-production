@@ -23,6 +23,13 @@ console.log('API Configuration:', {
   NEXT_PUBLIC_API_URL: process.env.NEXT_PUBLIC_API_URL
 });
 
+// Backward-compatible getApiUrl function
+export function getApiUrl(endpoint: string): string {
+  // Remove /api prefix if it exists since API_BASE_URL already includes it
+  const cleanEndpoint = endpoint.startsWith('/api') ? endpoint.substring(4) : endpoint;
+  return `${API_BASE_URL}${cleanEndpoint.startsWith('/') ? cleanEndpoint : `/${cleanEndpoint}`}`;
+}
+
 // API Helper Functions
 export const apiCall = async (endpoint: string, options: RequestInit = {}) => {
   const url = `${API_BASE_URL}${endpoint.startsWith('/') ? endpoint : `/${endpoint}`}`;
