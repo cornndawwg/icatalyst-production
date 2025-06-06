@@ -1,0 +1,19 @@
+[build]
+builder = "nixpacks"
+
+[build.nixpacks]
+installPhase = "npm ci"
+buildPhase = "npm run build"
+startPhase = "npm start"
+
+[deploy]
+healthcheckPath = "/health"
+healthcheckTimeout = 30
+restartPolicyType = "always"
+
+[env]
+NODE_ENV = "production"
+PORT = "3001"
+
+[services.backend]
+staticPublishPath = "" 
