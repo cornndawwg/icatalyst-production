@@ -136,6 +136,30 @@ app.get('/health', (req, res) => {
 
 console.log('✅ Enhanced health route confirmed working - Phase 3 baseline');
 
+// RESTORE ROUTE IMPORTS - Finding the malformed route at position 7
+const authRoutes = require('./routes/auth.routes');
+const customersRoutes = require('./routes/customers.routes');
+const propertiesRoutes = require('./routes/properties.routes');
+const productsRoutes = require('./routes/products.routes');
+const proposalsRoutes = require('./routes/proposals.routes');
+const proposalPersonasRoutes = require('./routes/proposal-personas.routes');
+const uploadRoutes = require('./routes/upload.routes');
+const portalRoutes = require('./routes/portal.routes');
+const testDbRoutes = require('./routes/test-db.routes');
+
+// Mount API routes
+app.use('/api/auth', authRoutes);
+app.use('/api/customers', customersRoutes);
+app.use('/api/properties', propertiesRoutes);
+app.use('/api/products', productsRoutes);
+app.use('/api/proposals', proposalsRoutes);
+app.use('/api/proposal-personas', proposalPersonasRoutes);
+app.use('/api/upload', uploadRoutes);
+app.use('/api/portal', portalRoutes);
+app.use('/api/test-db', testDbRoutes);
+
+console.log('✅ All API routes mounted');
+
 // SURGICAL DEBUGGING: PHASE 4A - STATIC FILE SERVING (FIRST INDIVIDUAL TEST)
 console.log('🔬 TESTING: Phase 4A - Static file serving individually');
 
