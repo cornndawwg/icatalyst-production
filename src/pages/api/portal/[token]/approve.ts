@@ -1,5 +1,5 @@
 import { NextApiRequest, NextApiResponse } from 'next';
-import { PrismaClient } from '../../../../../generated/prisma';
+import { PrismaClient } from '@prisma/client';
 import { validatePortalTokenFromDatabase } from '../../../../lib/simplePortalAuth';
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {

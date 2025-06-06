@@ -998,7 +998,7 @@ export const getServerSideProps: GetServerSideProps = async (context) => {
 
     // 🔧 ENHANCED: Fetch real proposal data from database
     try {
-      const { PrismaClient } = require('../../../generated/prisma');
+      const { PrismaClient } = require('@prisma/client');
       const prisma = new PrismaClient();
 
       const proposal = await prisma.proposal.findUnique({

@@ -16,7 +16,7 @@
     "fix:all": "fix-all-issues.bat",
     "start:clean": "npm run clean && npm run dev",
     "build": "npx prisma generate && next build",
-    "start": "node src/index.js",
+    "start": "npx prisma generate && node src/index.js",
     "build:frontend": "cd frontend && npm run build",
     "build:all": "npm run build:frontend && npm run build",
     "start:api": "node src/index.js",

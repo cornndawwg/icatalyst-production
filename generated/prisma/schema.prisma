@@ -1,0 +1,444 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+  output   = "../generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Customer {
+  id                     String           @id @default(uuid())
+  type                   String // residential, commercial, high-net-worth
+  status                 String // prospect, active, completed, inactive
+  firstName              String
+  lastName               String
+  company                String?
+  email                  String
+  phone                  String
+  preferredCommunication String
+  billingAddress         Address?
+  properties             Property[]
+  projects               Project[]
+  interactions           Interaction[]
+  tags                   Tag[]
+  notes                  String?
+  metrics                CustomerMetrics?
+  proposals              Proposal[]
+  createdAt              DateTime         @default(now())
+  updatedAt              DateTime         @updatedAt
+}
+
+model Tag {
+  id         String   @id @default(uuid())
+  name       String
+  customer   Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  customerId String
+}
+
+model Address {
+  id         String    @id @default(uuid())
+  street     String
+  city       String
+  state      String
+  zipCode    String
+  country    String
+  customer   Customer  @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  customerId String    @unique
+  property   Property?
+}
+
+model Property {
+  id             String               @id @default(uuid())
+  name           String
+  type           String // single-family, condo, commercial, multi-family, other
+  address        Address?             @relation(fields: [addressId], references: [id])
+  addressId      String?              @unique
+  squareFootage  Float
+  bedrooms       Int?
+  bathrooms      Int?
+  yearBuilt      Int?
+  photos         Photo[]
+  documents      Document[]
+  systems        SystemInstallation[]
+  serviceHistory ServiceRecord[]
+  customer       Customer             @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  customerId     String
+  projects       Project[]
+  proposals      Proposal[]
+}
+
+model Photo {
+  id         String   @id @default(uuid())
+  url        String
+  property   Property @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+  propertyId String
+  uploadedAt DateTime @default(now())
+  uploadedBy String
+}
+
+model Document {
+  id         String    @id @default(uuid())
+  name       String
+  url        String
+  type       String
+  property   Property? @relation(fields: [propertyId], references: [id], onDelete: SetNull)
+  propertyId String?
+  project    Project?  @relation(fields: [projectId], references: [id], onDelete: SetNull)
+  projectId  String?
+  uploadedAt DateTime  @default(now())
+  uploadedBy String
+}
+
+model SystemInstallation {
+  id          String    @id @default(uuid())
+  type        String
+  details     String
+  installDate DateTime?
+  lastService DateTime?
+  property    Property  @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+  propertyId  String
+}
+
+model ServiceRecord {
+  id          String   @id @default(uuid())
+  date        DateTime
+  type        String
+  description String
+  technician  String
+  cost        Float
+  property    Property @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+  propertyId  String
+}
+
+model Project {
+  id          String              @id @default(uuid())
+  name        String
+  description String
+  status      String // planning, in-progress, completed, on-hold, cancelled
+  startDate   DateTime
+  endDate     DateTime?
+  property    Property            @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+  propertyId  String
+  teamMembers ProjectTeamMember[]
+  milestones  Milestone[]
+  budget      Budget?
+  documents   Document[]
+  customer    Customer            @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  customerId  String
+  proposals   Proposal[]
+}
+
+model ProjectTeamMember {
+  id           String     @id @default(uuid())
+  project      Project    @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  projectId    String
+  teamMember   TeamMember @relation(fields: [teamMemberId], references: [id], onDelete: Cascade)
+  teamMemberId String
+}
+
+model TeamMember {
+  id       String              @id @default(uuid())
+  name     String
+  role     String
+  email    String
+  phone    String
+  projects ProjectTeamMember[]
+}
+
+model Milestone {
+  id            String    @id @default(uuid())
+  name          String
+  description   String
+  status        String // pending, in-progress, completed, overdue
+  dueDate       DateTime
+  completedDate DateTime?
+  assignedTo    String?
+  project       Project   @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  projectId     String
+}
+
+model Budget {
+  id        String           @id @default(uuid())
+  currency  String
+  total     Float
+  spent     Float
+  remaining Float
+  lineItems BudgetLineItem[]
+  project   Project          @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  projectId String           @unique
+}
+
+model BudgetLineItem {
+  id          String @id @default(uuid())
+  description String
+  amount      Float
+  category    String
+  budget      Budget @relation(fields: [budgetId], references: [id], onDelete: Cascade)
+  budgetId    String
+}
+
+model Interaction {
+  id            String    @id @default(uuid())
+  type          String // call, email, meeting, site-visit, other
+  date          DateTime
+  summary       String
+  details       String
+  followUpDate  DateTime?
+  followUpNotes String?
+  createdBy     String
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  customer      Customer  @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  customerId    String
+}
+
+model CustomerMetrics {
+  id                       String    @id @default(uuid())
+  totalRevenue             Float
+  projectsCompleted        Int
+  avgResponseTime          Float
+  lastInteraction          DateTime?
+  nextScheduledInteraction DateTime?
+  customer                 Customer  @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  customerId               String    @unique
+}
+
+// Smart Proposal System Models
+
+model Proposal {
+  id              String    @id @default(uuid())
+  name            String
+  description     String?
+  status          String // draft, pending, approved, declined, expired
+  customerPersona String // homeowner, interior-designer, builder, architect, cto-cio, business-owner, c-suite, office-manager, facilities-manager
+  voiceTranscript String? // Voice-to-text input transcript
+  aiSummary       String? // AI-generated proposal summary (JSON string with complete AI workflow data)
+  totalAmount     Float     @default(0)
+  validUntil      DateTime?
+
+  // Portal functionality
+  portalToken      String?   @unique // Secure token for public portal access
+  portalExpiresAt  DateTime? // When portal access expires
+  portalViewCount  Int       @default(0) // Track how many times viewed
+  portalLastViewed DateTime? // Last time client viewed portal
+
+  // Client approval workflow
+  clientStatus    String? // pending, approved, changes-requested, rejected
+  clientFeedback  String? // Client comments/feedback
+  clientSignature String? // Digital signature data
+  approvedAt      DateTime? // When client approved
+  approvedBy      String? // Client name who approved
+
+  // Customer vs Prospect fields
+  isExistingCustomer Boolean   @default(true)
+  customer           Customer? @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  customerId         String?
+
+  // Prospect fields (used when isExistingCustomer = false)
+  prospectName    String? // Required when isExistingCustomer = false
+  prospectCompany String? // Optional company name for prospect
+  prospectEmail   String? // Required when isExistingCustomer = false
+  prospectPhone   String? // Optional phone for prospect
+  prospectStatus  String? // prospect, qualified, approved, converted_to_customer, lost
+
+  property   Property?      @relation(fields: [propertyId], references: [id], onDelete: SetNull)
+  propertyId String?
+  project    Project?       @relation(fields: [projectId], references: [id], onDelete: SetNull)
+  projectId  String?
+  items      ProposalItem[]
+  createdBy  String
+  createdAt  DateTime       @default(now())
+  updatedAt  DateTime       @updatedAt
+
+  // Optional email integration (nullable - won't break existing functionality)
+  emailLogs EmailLog[] // Track emails sent for this proposal
+}
+
+model ProposalItem {
+  id          String   @id @default(uuid())
+  name        String
+  description String?
+  category    String // equipment, labor, materials, design, consulting, installation, service
+  quantity    Int      @default(1)
+  unitPrice   Float
+  totalPrice  Float
+  product     Product? @relation(fields: [productId], references: [id], onDelete: SetNull)
+  productId   String?
+  proposal    Proposal @relation(fields: [proposalId], references: [id], onDelete: Cascade)
+  proposalId  String
+  sortOrder   Int      @default(0)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model Product {
+  id              String         @id @default(uuid())
+  name            String
+  description     String?
+  category        String // audio-video, lighting, security, networking, climate, access-control, other
+  brand           String?
+  model           String?
+  sku             String?        @unique
+  basePrice       Float
+  goodTierPrice   Float? // Good pricing tier
+  betterTierPrice Float? // Better pricing tier
+  bestTierPrice   Float? // Best pricing tier
+  isActive        Boolean        @default(true)
+  specifications  String? // JSON or text specifications
+  compatibility   String? // Compatible systems/protocols
+  installation    String? // Installation requirements/notes
+  proposalItems   ProposalItem[]
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
+}
+
+model ProposalPersona {
+  id              String   @id @default(uuid())
+  type            String // residential, commercial
+  name            String   @unique // homeowner, interior-designer, builder, architect, cto-cio, business-owner, c-suite, office-manager, facilities-manager
+  displayName     String
+  description     String?
+  keyFeatures     String // JSON array of key selling points for this persona
+  recommendedTier String // good, better, best
+  isActive        Boolean  @default(true)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+}
+
+// ========================================
+// EMAIL INTEGRATION SYSTEM - NEW TABLES
+// ========================================
+// These tables are completely additive and don't modify existing functionality
+
+model EmailConfig {
+  id           String @id @default(uuid())
+  integratorId String @unique // Can be used to link to integrator/company in future
+
+  // SMTP Settings
+  smtpHost     String
+  smtpPort     Int
+  smtpUser     String
+  smtpPassword String // Should be encrypted in production
+  smtpSecure   Boolean @default(true)
+
+  // Email Branding
+  companyName  String
+  companyLogo  String?
+  primaryColor String  @default("#1976d2")
+  signature    String?
+
+  // From Email Settings
+  fromEmail    String
+  fromName     String
+  replyToEmail String?
+
+  // Feature Flags
+  autoSendPortalLinks Boolean @default(false) // Start disabled for safety
+  trackEmails         Boolean @default(true)
+  isActive            Boolean @default(true)
+
+  // Relations
+  emailLogs EmailLog[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model EmailTemplate {
+  id           String  @id @default(uuid())
+  name         String
+  subject      String
+  htmlContent  String
+  textContent  String?
+  templateType String // portal_link, proposal_update, reminder, custom
+  isActive     Boolean @default(true)
+  isDefault    Boolean @default(false) // Mark default templates
+
+  // Template Variables (JSON array of variable names)
+  variables String // JSON string: ["clientName", "proposalName", "portalUrl", etc.]
+
+  // Relations
+  emailLogs EmailLog[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model EmailLog {
+  id String @id @default(uuid())
+
+  // Optional relations - can track emails for proposals or standalone
+  proposalId String?
+  proposal   Proposal? @relation(fields: [proposalId], references: [id], onDelete: SetNull)
+
+  templateId String
+  template   EmailTemplate @relation(fields: [templateId], references: [id], onDelete: Cascade)
+
+  configId String
+  config   EmailConfig @relation(fields: [configId], references: [id], onDelete: Cascade)
+
+  // Recipients
+  toEmail   String
+  toName    String?
+  fromEmail String
+  fromName  String
+
+  // Content
+  subject     String
+  htmlContent String // Rendered template
+  textContent String? // Rendered template
+
+  // Status Tracking
+  status      EmailStatus
+  sentAt      DateTime?
+  deliveredAt DateTime?
+  openedAt    DateTime?
+  clickedAt   DateTime?
+
+  // Provider Response
+  messageId    String? // Email provider message ID
+  providerData String? // JSON string for provider-specific data
+
+  // Error Handling
+  errorMessage String?
+  retryCount   Int     @default(0)
+  maxRetries   Int     @default(3)
+
+  // Tracking
+  openCount  Int @default(0)
+  clickCount Int @default(0)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+enum EmailStatus {
+  PENDING
+  SENT
+  DELIVERED
+  OPENED
+  CLICKED
+  BOUNCED
+  FAILED
+  CANCELLED
+}
+
+model User {
+  id        String    @id @default(uuid())
+  fullName  String
+  email     String    @unique
+  role      String
+  phone     String?
+  password  String
+  lastLogin DateTime?
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+}
