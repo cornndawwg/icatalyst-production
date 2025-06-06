@@ -143,37 +143,48 @@ console.log('✅ Enhanced health route confirmed working');
 
 // PHASE 4: HIGH-RISK ZONE - 404 HANDLERS + CATCH-ALL ROUTES
 
-// Next.js catch-all for production - POTENTIAL MALFORMED ROUTE
+// Next.js catch-all for production - FIXED MALFORMED ROUTE
 if (NODE_ENV === 'production') {
-  console.log('🚨 Adding Next.js catch-all route - POTENTIAL MALFORMED ROUTE ZONE');
+  console.log('🔧 Adding FIXED Next.js catch-all route - CORRECTED SYNTAX');
   
-  // This could be the malformed route! Testing catch-all pattern
-  app.get('/*', (req, res) => {
-    // In production, serve Next.js app for unmatched routes
-    res.sendFile(path.join(__dirname, '../.next/server/pages/index.html'));
+  // FIXED: Use proper Express catch-all syntax without conflicts
+  app.get('*', (req, res) => {
+    // In production, serve Next.js built pages or send 404 JSON
+    try {
+      // Try to serve the main Next.js page or fallback to JSON response
+      const indexPath = path.join(__dirname, '../public/index.html');
+      res.sendFile(indexPath, (err) => {
+        if (err) {
+          // Fallback to JSON response if file doesn't exist
+          res.status(404).json({
+            error: 'Page not found',
+            message: 'The requested page does not exist',
+            available_endpoints: ['/', '/api', '/health'],
+            timestamp: new Date().toISOString()
+          });
+        }
+      });
+    } catch (error) {
+      res.status(404).json({
+        error: 'Page not found',
+        message: 'The requested page does not exist',
+        available_endpoints: ['/', '/api', '/health'],
+        timestamp: new Date().toISOString()
+      });
+    }
   });
   
-  console.log('⚠️ Next.js catch-all route (/*) added - TESTING MALFORMED ROUTE PATTERN');
+  console.log('✅ FIXED Next.js catch-all route (*) - CORRECTED MALFORMED SYNTAX');
 }
 
-// 404 Error Handler - HIGHEST RISK FOR MALFORMED ROUTE
-console.log('🚨 Adding 404 handler - HIGHEST RISK MALFORMED ROUTE ZONE');
+// 404 Error Handler - REMOVED (handled by catch-all route above)
+console.log('🔧 REMOVED redundant 404 handler - Now handled by fixed catch-all route');
 
-// This is likely where the malformed route exists!
-app.use((req, res, next) => {
-  console.log(`🔍 404 HANDLER: ${req.method} ${req.path} - Route not found`);
-  res.status(404).json({
-    error: 'Route not found',
-    method: req.method,
-    path: req.path,
-    phase: 'Phase 4: 404 Handler Testing',
-    message: 'The requested endpoint does not exist',
-    available_endpoints: ['/', '/api', '/health'],
-    timestamp: new Date().toISOString()
-  });
-});
+// REMOVED: Redundant 404 handler since catch-all route handles it
+// The catch-all route (*) above now properly handles 404 responses
+// This prevents route conflicts and malformed parameter issues
 
-console.log('⚠️ 404 handler added - MONITORING FOR MALFORMED ROUTE');
+console.log('✅ 404 handling now managed by corrected catch-all route');
 
 // Global Error Handler - POTENTIAL MALFORMED ROUTE
 app.use((error, req, res, next) => {
