@@ -1,14 +1,15 @@
-// ULTRA-MINIMAL EXPRESS SERVER - EMERGENCY ISOLATION
-// Finding malformed route in main server setup
+// PHASE 3: BASIC ROUTES ADDITION - CRITICAL ROUTE PARAMETER TESTING
+// Adding root route + API info route - FIRST ROUTE PARAMETER TEST
 
 const express = require('express');
 const cors = require('cors');
 const path = require('path');
 
-console.log('🚨 EMERGENCY ISOLATION: Ultra-minimal Express server');
-console.log('📋 Goal: Find malformed route in main server setup');
+console.log('🎯 PHASE 3: Basic Routes Addition - CRITICAL TESTING ZONE');
+console.log('📋 Adding: Root route (/) + API info route (/api)');
+console.log('⚠️ FIRST ROUTE PARAMETER TESTING - Monitoring for malformed routes');
 
-// PHASE 2: Environment variable processing
+// Phase 2: Environment variable processing (confirmed working)
 const envPath = path.join(__dirname, '..', '.env');
 console.log(`Looking for .env file at: ${envPath}`);
 
@@ -25,7 +26,7 @@ if (!JWT_SECRET) {
   console.log('⚠️ JWT_SECRET missing - using fallback for development');
 }
 
-console.log('=== PHASE 2: ENVIRONMENT REPORT ===');
+console.log('=== PHASE 3: ENVIRONMENT REPORT ===');
 console.log('NODE_ENV:', NODE_ENV);
 console.log('PORT:', PORT);
 console.log('DATABASE_URL present:', !!DATABASE_URL);
@@ -47,7 +48,7 @@ console.log('================================');
 // Create Express app
 const app = express();
 
-// PHASE 2: Request logging middleware
+// Phase 2: Request logging middleware (confirmed working)
 app.use((req, res, next) => {
   const start = Date.now();
   res.on('finish', () => {
@@ -57,7 +58,7 @@ app.use((req, res, next) => {
   next();
 });
 
-// PHASE 1: Basic middleware addition
+// Phase 1: Basic middleware (confirmed working)
 app.use(cors({
   origin: true,
   credentials: true
@@ -71,39 +72,80 @@ console.log('✅ Request logging middleware added');
 console.log('✅ CORS middleware added');
 console.log('✅ Enhanced JSON parsing added');
 
-// Enhanced health endpoint with Phase 2 information
+// PHASE 3: BASIC ROUTES - CRITICAL TESTING ZONE
+
+// Root route - FIRST CUSTOM ROUTE TEST
+app.get('/', (req, res) => {
+  res.json({
+    message: 'iCatalyst Smart Home CRM - Phase 3 Success!',
+    phase: 'Phase 3: Basic Routes Testing',
+    status: 'operational',
+    api_documentation: '/api',
+    health_check: '/health',
+    features: ['CORS', 'JSON parsing', 'Request logging', 'Environment validation', 'Basic routing'],
+    note: 'Root route operational - route parameter testing successful!',
+    timestamp: new Date().toISOString()
+  });
+});
+
+console.log('✅ Root route (/) added - FIRST ROUTE PARAMETER TEST');
+
+// API info route - SECOND CUSTOM ROUTE TEST  
+app.get('/api', (req, res) => {
+  res.json({
+    name: 'iCatalyst Smart Home CRM API',
+    version: '1.0.0',
+    phase: 'Phase 3: Basic Routes Testing',
+    status: 'operational',
+    endpoints: {
+      health: '/health',
+      root: '/',
+      api_info: '/api'
+    },
+    features: ['CORS enabled', 'JSON parsing', 'Request monitoring', 'Environment validation'],
+    environment: NODE_ENV,
+    uptime: process.uptime(),
+    note: 'API route operational - route parameter testing successful!',
+    timestamp: new Date().toISOString()
+  });
+});
+
+console.log('✅ API info route (/api) added - SECOND ROUTE PARAMETER TEST');
+
+// Enhanced health endpoint (Phase 2 - confirmed working)
 app.get('/health', (req, res) => {
   res.json({ 
     status: 'healthy',
-    phase: 'Phase 2: Environment + Logging',
-    features: ['CORS', 'JSON parsing', 'Request logging', 'Environment validation'],
+    phase: 'Phase 3: Basic Routes + Environment + Logging',
+    features: ['CORS', 'JSON parsing', 'Request logging', 'Environment validation', 'Basic routing'],
     environment: {
       node_env: NODE_ENV,
       port: PORT,
       database_configured: !!DATABASE_URL,
       jwt_configured: !!JWT_SECRET
     },
+    routes_tested: ['/', '/api', '/health'],
     timestamp: new Date().toISOString(),
     uptime: process.uptime(),
     memory: process.memoryUsage()
   });
 });
 
-console.log('✅ Enhanced health route with Phase 2 monitoring');
+console.log('✅ Enhanced health route with Phase 3 route testing status');
 
-// NO OTHER ROUTES
-// NO 404 handler 
-// NO static serving
-// NO complex middleware
-// NO catch-all routes
+// NO 404 HANDLER YET (Phase 4 - HIGH RISK ZONE)
+// NO external route files yet (Phase 5)
+// NO catch-all routes yet (Phase 4 - VERY HIGH RISK)
 
-// Start server with enhanced logging
+// Start server with Phase 3 route testing
 app.listen(PORT, () => {
-  console.log(`🚀 PHASE 2 SERVER: Running on port ${PORT}`);
+  console.log(`🚀 PHASE 3 SERVER: Running on port ${PORT}`);
   console.log(`🌐 Environment: ${NODE_ENV}`);
-  console.log(`📍 Endpoints: /health`);
-  console.log(`✅ Features: CORS + JSON + Logging + Environment`);
+  console.log(`📍 Endpoints: /, /api, /health`);
+  console.log(`✅ Features: CORS + JSON + Logging + Environment + Basic Routes`);
   console.log(`📊 Request monitoring: ACTIVE`);
-  console.log(`🎯 Testing environment + logging safety`);
-  console.log(`📋 Next Phase 3: Basic routes (/api, /) - CAUTION ZONE`);
+  console.log(`🎯 CRITICAL: Testing basic route parameters`);
+  console.log(`⚠️ If this works: malformed route is in Phase 4 (404 handlers)`);
+  console.log(`🚨 If this fails: malformed route found in basic routing`);
+  console.log(`📋 Next Phase 4: 404 handlers + catch-all routes - HIGH RISK ZONE`);
 }); 
