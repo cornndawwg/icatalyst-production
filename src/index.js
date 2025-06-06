@@ -148,15 +148,56 @@ if (NODE_ENV === 'production') {
   console.log('⏭️ Phase 4A: Static file serving skipped (development mode)');
 }
 
-// SURGICAL DEBUGGING: NO OTHER PHASE 4 FEATURES YET
-// Will add individually in next iterations:
-// 4B. Next.js catch-all route (ALREADY FIXED)
-// 4C. 404 handlers (POTENTIAL MALFORMED ROUTE)  
-// 4D. Error handlers (POTENTIAL MALFORMED ROUTE)
+// SURGICAL DEBUGGING: PHASE 4B - NEXT.JS CATCH-ALL ROUTE (HIGH SUSPICION)
+console.log('🔬 TESTING: Phase 4B - Next.js catch-all route (PRIMARY SUSPECT)');
+console.log('⚠️ HIGH PROBABILITY: Previous error location - Missing parameter name at 2');
 
-console.log('🔬 PHASE 4A ONLY: Static file serving test');
-console.log('📋 Next: Test if static serving has malformed routes');
-console.log('🎯 Goal: Isolate each malformed route pattern individually');
+if (NODE_ENV === 'production') {
+  console.log('🚨 Adding Next.js catch-all route - MALFORMED ROUTE EXPECTED HERE');
+  
+  // TESTING: This is likely where the malformed route exists!
+  // Previous error: "Missing parameter name at 2" occurred here
+  app.get('*', (req, res) => {
+    // In production, serve Next.js built pages or send 404 JSON
+    try {
+      // Try to serve the main Next.js page or fallback to JSON response
+      const indexPath = path.join(__dirname, '../public/index.html');
+      res.sendFile(indexPath, (err) => {
+        if (err) {
+          // Fallback to JSON response if file doesn't exist
+          res.status(404).json({
+            error: 'Page not found',
+            message: 'The requested page does not exist',
+            available_endpoints: ['/', '/api', '/health'],
+            phase: 'Phase 4B: Next.js Catch-All Testing',
+            timestamp: new Date().toISOString()
+          });
+        }
+      });
+    } catch (error) {
+      res.status(404).json({
+        error: 'Page not found',
+        message: 'The requested page does not exist',
+        available_endpoints: ['/', '/api', '/health'],
+        phase: 'Phase 4B: Next.js Catch-All Testing',
+        timestamp: new Date().toISOString()
+      });
+    }
+  });
+  
+  console.log('⚠️ Next.js catch-all route (*) added - TESTING FOR MALFORMED SYNTAX');
+} else {
+  console.log('⏭️ Phase 4B: Next.js catch-all skipped (development mode)');
+}
+
+// SURGICAL DEBUGGING: NO OTHER PHASE 4 FEATURES YET
+// Will add individually in next iterations if Phase 4B succeeds:
+// 4C. 404 handlers (POTENTIAL REMAINING MALFORMED ROUTE)  
+// 4D. Error handlers (POTENTIAL REMAINING MALFORMED ROUTE)
+
+console.log('🔬 PHASE 4B TESTING: Next.js catch-all route isolation');
+console.log('📋 Expected: path-to-regexp error if malformed route exists here');
+console.log('🎯 Goal: Identify exact malformed route parameter syntax');
 
 // Start server with Phase 3 baseline
 app.listen(PORT, () => {
