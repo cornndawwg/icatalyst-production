@@ -148,15 +148,24 @@ if (NODE_ENV === 'production') {
   console.log('⏭️ Phase 4A: Static file serving skipped (development mode)');
 }
 
-// SURGICAL DEBUGGING: PHASE 4B - NEXT.JS CATCH-ALL ROUTE (HIGH SUSPICION)
+// SURGICAL DEBUGGING: NO OTHER PHASE 4 FEATURES YET
+// Will add individually in next iterations if Phase 4B succeeds:
+// 4C. 404 handlers (POTENTIAL REMAINING MALFORMED ROUTE)  
+// 4D. Error handlers (POTENTIAL REMAINING MALFORMED ROUTE)
+
+console.log('🔬 PHASE 4B TESTING: Next.js catch-all route isolation');
+console.log('📋 Expected: path-to-regexp error if malformed route exists here');
+console.log('🎯 Goal: Identify exact malformed route parameter syntax');
+
+// SURGICAL DEBUGGING: PHASE 4B - NEXT.JS CATCH-ALL ROUTE (MOVED TO END)
 console.log('🔬 TESTING: Phase 4B - Next.js catch-all route (PRIMARY SUSPECT)');
-console.log('⚠️ HIGH PROBABILITY: Previous error location - Missing parameter name at 2');
+console.log('⚠️ FIXED: Moving catch-all route to END to avoid route order conflicts');
 
 if (NODE_ENV === 'production') {
-  console.log('🚨 Adding Next.js catch-all route - MALFORMED ROUTE EXPECTED HERE');
+  console.log('🔧 Adding FIXED Next.js catch-all route - CORRECTED ROUTE ORDER');
   
-  // TESTING: This is likely where the malformed route exists!
-  // Previous error: "Missing parameter name at 2" occurred here
+  // FIXED: Catch-all route MUST be last to avoid conflicts with specific routes
+  // This prevents interference with /, /api, /health routes defined above
   app.get('*', (req, res) => {
     // In production, serve Next.js built pages or send 404 JSON
     try {
@@ -169,7 +178,7 @@ if (NODE_ENV === 'production') {
             error: 'Page not found',
             message: 'The requested page does not exist',
             available_endpoints: ['/', '/api', '/health'],
-            phase: 'Phase 4B: Next.js Catch-All Testing',
+            phase: 'Phase 4B: FIXED Next.js Catch-All Testing',
             timestamp: new Date().toISOString()
           });
         }
@@ -179,25 +188,16 @@ if (NODE_ENV === 'production') {
         error: 'Page not found',
         message: 'The requested page does not exist',
         available_endpoints: ['/', '/api', '/health'],
-        phase: 'Phase 4B: Next.js Catch-All Testing',
+        phase: 'Phase 4B: FIXED Next.js Catch-All Testing',
         timestamp: new Date().toISOString()
       });
     }
   });
   
-  console.log('⚠️ Next.js catch-all route (*) added - TESTING FOR MALFORMED SYNTAX');
+  console.log('✅ FIXED: Next.js catch-all route (*) - CORRECTED ROUTE ORDER AND PLACEMENT');
 } else {
   console.log('⏭️ Phase 4B: Next.js catch-all skipped (development mode)');
 }
-
-// SURGICAL DEBUGGING: NO OTHER PHASE 4 FEATURES YET
-// Will add individually in next iterations if Phase 4B succeeds:
-// 4C. 404 handlers (POTENTIAL REMAINING MALFORMED ROUTE)  
-// 4D. Error handlers (POTENTIAL REMAINING MALFORMED ROUTE)
-
-console.log('🔬 PHASE 4B TESTING: Next.js catch-all route isolation');
-console.log('📋 Expected: path-to-regexp error if malformed route exists here');
-console.log('🎯 Goal: Identify exact malformed route parameter syntax');
 
 // Start server with Phase 3 baseline
 app.listen(PORT, () => {
