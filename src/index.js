@@ -1,5 +1,5 @@
-// MINIMAL EXPRESS SERVER - SYSTEMATIC ROUTE ADDITION
-// Phase 1: Add test-db route (simplest first)
+// MINIMAL EXPRESS SERVER - ZERO EXTERNAL ROUTES
+// Testing Railway deployment without any route file imports
 
 const express = require('express');
 const cors = require('cors');
@@ -21,7 +21,7 @@ if (!JWT_SECRET) {
   console.log('⚠️ JWT_SECRET missing - using fallback');
 }
 
-console.log('=== RAILWAY SYSTEMATIC ROUTE TESTING ===');
+console.log('=== RAILWAY ZERO ROUTES DEPLOYMENT ===');
 console.log('NODE_ENV:', process.env.NODE_ENV);
 console.log('PORT:', process.env.PORT);
 console.log('DATABASE_URL present:', !!DATABASE_URL);
@@ -39,7 +39,7 @@ console.log('PGURL present:', !!process.env.PGURL);
 
 console.log('Current working directory:', process.cwd());
 console.log('__dirname:', __dirname);
-console.log('Deployment Mode: BREAKTHROUGH - FOUND THE ISSUE!');
+console.log('Deployment Mode: ZERO EXTERNAL ROUTES - BASELINE TEST');
 console.log('================================');
 
 // Create Express app
@@ -56,51 +56,46 @@ app.use(express.urlencoded({ extended: true, limit: '50mb' }));
 
 console.log('✅ Basic middleware loaded');
 
-// Load test-db route now that we fixed the issue
-let testDbRoutes;
-try {
-  testDbRoutes = require('./routes/test-db.routes');
-  console.log('✅ Test-db routes loaded');
-} catch (err) {
-  console.error('❌ Test-db routes loading failed:', err.message);
-}
+// NO EXTERNAL ROUTE IMPORTS - Only inline routes
 
 // Health check route
 app.get('/health', (req, res) => {
   res.json({ 
     status: 'healthy',
     timestamp: new Date().toISOString(),
-    mode: 'breakthrough-success',
-    message: 'BREAKTHROUGH: Fixed path-to-regexp error!'
+    mode: 'zero-routes-baseline',
+    message: 'Baseline test - no external routes loaded'
   });
 });
-
-console.log('✅ Health route added');
-
-// Mount test-db route
-if (testDbRoutes) {
-  app.use('/api/test-db', testDbRoutes);
-  console.log('✅ Test-db route mounted at /api/test-db');
-}
 
 // API info
 app.get('/api', (req, res) => {
   res.json({ 
-    message: 'iCatalyst Smart Home CRM - BREAKTHROUGH SUCCESS!',
+    message: 'iCatalyst Smart Home CRM - Baseline Test',
     status: 'operational',
-    breakthrough: 'Fixed path-to-regexp error caused by invalid * pattern',
-    available_endpoints: testDbRoutes ? ['test-db'] : [],
-    note: 'Ready to add more routes systematically!'
+    mode: 'zero-external-routes',
+    available_endpoints: ['health', 'api'],
+    note: 'Testing without any external route file imports'
   });
 });
 
 // Root route
 app.get('/', (req, res) => {
   res.json({ 
-    message: 'iCatalyst Smart Home CRM - BREAKTHROUGH ACHIEVED!', 
+    message: 'iCatalyst Smart Home CRM - Baseline Test', 
     api_root: '/api',
     health_check: '/health',
-    issue_fixed: 'Invalid * pattern in 404 handler'
+    mode: 'No external route files loaded'
+  });
+});
+
+// Simple inline test-db route (no external file)
+app.get('/api/test-db', (req, res) => {
+  res.json({
+    status: 'success',
+    message: 'Inline test-db route working',
+    note: 'No external route file - inline route only',
+    timestamp: new Date().toISOString()
   });
 });
 
@@ -108,7 +103,7 @@ app.get('/', (req, res) => {
 app.all('/*', (req, res) => {
   res.status(404).json({ 
     error: 'Endpoint not found',
-    available_endpoints: ['/health', '/api', testDbRoutes ? '/api/test-db' : null].filter(Boolean)
+    available_endpoints: ['/health', '/api', '/api/test-db', '/']
   });
 });
 
@@ -116,9 +111,9 @@ app.all('/*', (req, res) => {
 const PORT = process.env.PORT || 3001;
 
 app.listen(PORT, () => {
-  console.log(`🎉 BREAKTHROUGH SUCCESS! Server started on port ${PORT}`);
-  console.log(`🔧 Fixed path-to-regexp error: Changed * to /* in 404 handler`);
-  console.log(`📋 Available endpoints: /health, /api${testDbRoutes ? ', /api/test-db' : ''}`);
-  console.log(`🚀 Ready to systematically add remaining routes!`);
-  console.log(`✅ Railway deployment should now work perfectly!`);
+  console.log(`🚀 BASELINE TEST: Server started on port ${PORT}`);
+  console.log(`📋 Available endpoints: /health, /api, /api/test-db, /`);
+  console.log(`🎯 Zero external route files loaded`);
+  console.log(`✅ If this works, external route files are the issue`);
+  console.log(`🔍 If this fails, there's still a configuration problem`);
 }); 
