@@ -15,7 +15,7 @@
     "restore:ports": "restore-dual-server.bat",
     "fix:all": "fix-all-issues.bat",
     "start:clean": "npm run clean && npm run dev",
-    "build": "echo 'Build complete - API server ready' && npx prisma generate",
+    "build": "npx prisma generate && next build",
     "start": "node src/index.js",
     "build:frontend": "cd frontend && npm run build",
     "build:all": "npm run build:frontend && npm run build",

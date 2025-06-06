@@ -1,13 +1,7 @@
 const { logger } = require('../utils/logger');
-const { PrismaClient } = require('../../generated/prisma');
+const { PrismaClient } = require('@prisma/client');
 
-const prisma = new PrismaClient({
-  datasources: {
-    db: {
-      url: process.env.DATABASE_URL
-    }
-  }
-});
+const prisma = new PrismaClient();
 
 logger.info('Database configuration:', {
   type: 'PostgreSQL',
