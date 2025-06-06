@@ -15,7 +15,7 @@
     "restore:ports": "restore-dual-server.bat",
     "fix:all": "fix-all-issues.bat",
     "start:clean": "npm run clean && npm run dev",
-    "build": "npx prisma generate && next build && next export",
+    "build": "npx prisma generate && next build",
     "build:production": "npx prisma generate && next build && next export",
     "start": "npx prisma generate && node src/index.js",
     "build:frontend": "cd frontend && npm run build",
