@@ -139,14 +139,17 @@ console.log('✅ Enhanced health route confirmed working - Phase 3 baseline');
 // SURGICAL DEBUGGING: PHASE 4A - STATIC FILE SERVING (FIRST INDIVIDUAL TEST)
 console.log('🔬 TESTING: Phase 4A - Static file serving individually');
 
-if (NODE_ENV === 'production') {
-  // Serve Next.js static files in production
-  app.use(express.static(path.join(__dirname, '../.next/static')));
-  app.use(express.static(path.join(__dirname, '../public')));
-  console.log('✅ Phase 4A: Static file serving added for production');
-} else {
-  console.log('⏭️ Phase 4A: Static file serving skipped (development mode)');
-}
+// REMOVED: Static file serving to isolate the issue
+// if (NODE_ENV === 'production') {
+//   // Serve Next.js static files in production
+//   app.use(express.static(path.join(__dirname, '../.next/static')));
+//   app.use(express.static(path.join(__dirname, '../public')));
+//   console.log('✅ Phase 4A: Static file serving added for production');
+// } else {
+//   console.log('⏭️ Phase 4A: Static file serving skipped (development mode)');
+// }
+
+console.log('🔧 TEMPORARILY REMOVED: Static file serving to isolate malformed route');
 
 // SURGICAL DEBUGGING: NO OTHER PHASE 4 FEATURES YET
 // Will add individually in next iterations if Phase 4B succeeds:
@@ -157,46 +160,31 @@ console.log('🔬 PHASE 4B TESTING: Next.js catch-all route isolation');
 console.log('📋 Expected: path-to-regexp error if malformed route exists here');
 console.log('🎯 Goal: Identify exact malformed route parameter syntax');
 
-// SURGICAL DEBUGGING: PHASE 4B - NEXT.JS CATCH-ALL ROUTE (MOVED TO END)
-console.log('🔬 TESTING: Phase 4B - Next.js catch-all route (PRIMARY SUSPECT)');
-console.log('⚠️ FIXED: Moving catch-all route to END to avoid route order conflicts');
+// SURGICAL DEBUGGING: PHASE 4B - SIMPLIFIED CATCH-ALL ROUTE (NO FILE OPERATIONS)
+console.log('🔬 TESTING: Phase 4B - SIMPLIFIED catch-all route (NO FILE PATHS)');
+console.log('⚠️ SIMPLIFIED: Removing file operations to isolate route syntax issues');
 
 if (NODE_ENV === 'production') {
-  console.log('🔧 Adding FIXED Next.js catch-all route - CORRECTED ROUTE ORDER');
+  console.log('🔧 Adding SIMPLIFIED catch-all route - NO FILE OPERATIONS');
   
-  // FIXED: Catch-all route MUST be last to avoid conflicts with specific routes
-  // This prevents interference with /, /api, /health routes defined above
+  // SIMPLIFIED: Pure route without file operations to isolate syntax issues
   app.get('*', (req, res) => {
-    // In production, serve Next.js built pages or send 404 JSON
-    try {
-      // Try to serve the main Next.js page or fallback to JSON response
-      const indexPath = path.join(__dirname, '../public/index.html');
-      res.sendFile(indexPath, (err) => {
-        if (err) {
-          // Fallback to JSON response if file doesn't exist
-          res.status(404).json({
-            error: 'Page not found',
-            message: 'The requested page does not exist',
-            available_endpoints: ['/', '/api', '/health'],
-            phase: 'Phase 4B: FIXED Next.js Catch-All Testing',
-            timestamp: new Date().toISOString()
-          });
-        }
-      });
-    } catch (error) {
-      res.status(404).json({
-        error: 'Page not found',
-        message: 'The requested page does not exist',
-        available_endpoints: ['/', '/api', '/health'],
-        phase: 'Phase 4B: FIXED Next.js Catch-All Testing',
-        timestamp: new Date().toISOString()
-      });
-    }
+    // Simple JSON response - no file operations that could cause path issues
+    res.status(404).json({
+      error: 'Route not found',
+      message: 'This is a simplified catch-all route for testing',
+      requested_path: req.path,
+      method: req.method,
+      available_endpoints: ['/', '/api', '/health'],
+      phase: 'Phase 4B: SIMPLIFIED Catch-All Testing',
+      note: 'No file operations - pure route syntax test',
+      timestamp: new Date().toISOString()
+    });
   });
   
-  console.log('✅ FIXED: Next.js catch-all route (*) - CORRECTED ROUTE ORDER AND PLACEMENT');
+  console.log('✅ SIMPLIFIED: catch-all route (*) - NO FILE OPERATIONS, PURE SYNTAX TEST');
 } else {
-  console.log('⏭️ Phase 4B: Next.js catch-all skipped (development mode)');
+  console.log('⏭️ Phase 4B: Simplified catch-all skipped (development mode)');
 }
 
 // Start server with Phase 3 baseline
