@@ -197,9 +197,9 @@ if (NODE_ENV === 'production') {
   // ✅ "(.*)" - Regex pattern alternative
   // ✅ "/:param*" - Named parameter with wildcard
   
-  // EXPRESS-COMPATIBLE PATTERN: Using parameter wildcard syntax
-  // Testing Express-native catch-all pattern to resolve path-to-regexp error
-  app.get('/:path*', function(req, res) {
+  // EXPRESS 5 COMPATIBLE: Using named wildcard parameter
+  // Fixed Express 5 requirement for named wildcard parameters
+  app.get('/*path', function(req, res) {
     // Verified clean handler function
     res.status(404).json({
               error: 'Route not found',
@@ -209,12 +209,12 @@ if (NODE_ENV === 'production') {
         method: req.method,
         available_endpoints: ['/', '/api', '/health'],
         phase: 'Phase 4B: EXPRESS-COMPATIBLE Testing',
-        pattern_applied: 'Express parameter wildcard /:path*',
+        pattern_applied: 'Express 5 named wildcard /*path',
       timestamp: new Date().toISOString()
     });
   });
   
-  console.log('✅ EXPRESS-COMPATIBLE: catch-all route /:path* - PARAMETER WILDCARD SYNTAX');
+  console.log('✅ EXPRESS 5 COMPATIBLE: catch-all route /*path - NAMED WILDCARD SYNTAX');
 } else {
   console.log('⏭️ Phase 4B: PATH-TO-REGEXP compliant catch-all skipped (development mode)');
 }
