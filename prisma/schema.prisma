@@ -11,6 +11,8 @@ generator client {
 datasource db {
   provider = "postgresql"
   url      = env("DATABASE_URL")
+  // Railway PostgreSQL fallback - uses Railway's internal connection format
+  directUrl = env("PGURL")
 }
 
 model Customer {

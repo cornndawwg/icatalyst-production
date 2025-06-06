@@ -12,6 +12,23 @@ if (result.error) {
   console.warn('Warning: .env file not found, using environment variables');
 }
 
+// Railway environment variable fallbacks
+if (!process.env.DATABASE_URL) {
+  console.warn('⚠️ DATABASE_URL missing - Railway variable configuration issue detected');
+  // Railway PostgreSQL service typically uses this internal format
+  process.env.DATABASE_URL = process.env.PGURL || 
+    `postgresql://${process.env.PGUSER}:${process.env.PGPASSWORD}@${process.env.PGHOST}:${process.env.PGPORT}/${process.env.PGDATABASE}`;
+}
+
+if (!process.env.JWT_SECRET) {
+  console.warn('⚠️ JWT_SECRET missing - using fallback');
+  process.env.JWT_SECRET = 'iCatalyst2024SecureKey!';
+}
+
+if (!process.env.NODE_ENV) {
+  process.env.NODE_ENV = 'production';
+}
+
 const express = require('express');
 const cors = require('cors');
 
@@ -23,7 +40,19 @@ console.log('=== RAILWAY DEPLOYMENT DEBUG ===');
 console.log('NODE_ENV:', process.env.NODE_ENV);
 console.log('PORT:', process.env.PORT);
 console.log('DATABASE_URL present:', !!process.env.DATABASE_URL);
+console.log('DATABASE_URL length:', process.env.DATABASE_URL ? process.env.DATABASE_URL.length : 0);
 console.log('JWT_SECRET present:', !!process.env.JWT_SECRET);
+console.log('JWT_SECRET length:', process.env.JWT_SECRET ? process.env.JWT_SECRET.length : 0);
+
+// Railway PostgreSQL debug info
+console.log('Railway PG Variables:');
+console.log('PGHOST:', process.env.PGHOST);
+console.log('PGPORT:', process.env.PGPORT);
+console.log('PGDATABASE:', process.env.PGDATABASE);
+console.log('PGUSER:', process.env.PGUSER);
+console.log('PGPASSWORD present:', !!process.env.PGPASSWORD);
+console.log('PGURL present:', !!process.env.PGURL);
+
 console.log('Current working directory:', process.cwd());
 console.log('__dirname:', __dirname);
 console.log('================================');
@@ -103,7 +132,32 @@ app.get('/health', (req, res) => {
   res.status(200).json({ 
     status: 'healthy',
     timestamp: new Date().toISOString(),
-    uptime: process.uptime()
+    uptime: process.uptime(),
+    environment: {
+      NODE_ENV: process.env.NODE_ENV,
+      DATABASE_URL_present: !!process.env.DATABASE_URL,
+      JWT_SECRET_present: !!process.env.JWT_SECRET
+    }
+  });
+});
+
+// Environment debug endpoint
+app.get('/debug/env', (req, res) => {
+  res.json({
+    NODE_ENV: process.env.NODE_ENV,
+    PORT: process.env.PORT,
+    DATABASE_URL_present: !!process.env.DATABASE_URL,
+    DATABASE_URL_length: process.env.DATABASE_URL ? process.env.DATABASE_URL.length : 0,
+    JWT_SECRET_present: !!process.env.JWT_SECRET,
+    JWT_SECRET_length: process.env.JWT_SECRET ? process.env.JWT_SECRET.length : 0,
+    RAILWAY_VARS: {
+      PGHOST: process.env.PGHOST,
+      PGPORT: process.env.PGPORT,
+      PGDATABASE: process.env.PGDATABASE,
+      PGUSER: process.env.PGUSER,
+      PGPASSWORD_present: !!process.env.PGPASSWORD,
+      PGURL_present: !!process.env.PGURL
+    }
   });
 });
 
@@ -120,6 +174,7 @@ app.get('/', (req, res) => {
     timestamp: new Date().toISOString(),
     endpoints: {
       health: '/health',
+      debug: '/debug/env',
       auth: '/api/auth',
       customers: '/api/customers',
       upload: '/api/upload',
@@ -162,7 +217,16 @@ const server = app.listen(PORT, '0.0.0.0', () => {
   console.log(`📡 Server running on port ${PORT}`);
   console.log(`🌐 Environment: ${process.env.NODE_ENV || 'development'}`);
   console.log(`📊 Health check: http://localhost:${PORT}/health`);
+  console.log(`🔍 Debug endpoint: http://localhost:${PORT}/debug/env`);
   console.log(`🏠 API Root: http://localhost:${PORT}/`);
+  
+  // Final environment check
+  if (!process.env.DATABASE_URL) {
+    console.error('❌ DATABASE_URL still missing after fallbacks!');
+  } else {
+    console.log('✅ DATABASE_URL configured successfully');
+  }
+  
   logger.info(`iCatalyst CRM API Server started successfully on port ${PORT}`);
 }).on('error', (err) => {
   console.error('❌ Server startup error:', err);
