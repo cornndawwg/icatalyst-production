@@ -87,7 +87,8 @@ try {
 // Load routes with error handling
 const routes = {};
 try {
-  routes.auth = require('./routes/auth.routes');
+  // TEMPORARILY DISABLED: Auth routes causing path-to-regexp error - will debug separately
+  // routes.auth = require('./routes/auth.routes');
   routes.customers = require('./routes/customers.routes');
   routes.upload = require('./routes/upload.routes');
   routes.proposals = require('./routes/proposals.routes');
@@ -96,7 +97,7 @@ try {
   routes.properties = require('./routes/properties.routes');
   routes.testDb = require('./routes/test-db.routes');
   routes.portal = require('./routes/portal.routes');
-  console.log('✅ All routes loaded successfully');
+  console.log('✅ Core API routes loaded successfully (auth temporarily disabled for deployment)');
 } catch (err) {
   console.error('❌ Route loading failed:', err.message);
   // Continue with available routes
@@ -172,7 +173,8 @@ app.get('/debug/env', (req, res) => {
 app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
 
 // Mount API routes with /api prefix
-if (routes.auth) app.use('/api/auth', routes.auth);
+// TEMPORARILY DISABLED: Auth routes causing path-to-regexp error
+// if (routes.auth) app.use('/api/auth', routes.auth);
 if (routes.customers) app.use('/api/customers', routes.customers);
 if (routes.upload) app.use('/api/upload', routes.upload);
 if (routes.proposals) app.use('/api/proposals', routes.proposals);
