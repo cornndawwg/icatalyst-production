@@ -1,0 +1,358 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+  output   = "../generated/prisma"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = "file:./dev.db"
+}
+
+model Customer {
+  id                   String        @id @default(uuid())
+  type                 String        // residential, commercial, high-net-worth
+  status               String        // prospect, active, completed, inactive
+  firstName           String
+  lastName            String
+  company             String?
+  email               String
+  phone               String
+  preferredCommunication String
+  billingAddress      Address?
+  properties          Property[]
+  projects            Project[]
+  interactions        Interaction[]
+  tags                Tag[]
+  notes               String?
+  metrics             CustomerMetrics?
+  proposals           Proposal[]
+  createdAt           DateTime       @default(now())
+  updatedAt           DateTime       @updatedAt
+}
+
+model Tag {
+  id        String    @id @default(uuid())
+  name      String
+  customer  Customer  @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  customerId String
+}
+
+model Address {
+  id        String   @id @default(uuid())
+  street    String
+  city      String
+  state     String
+  zipCode   String
+  country   String
+  customer  Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  customerId String  @unique
+  property  Property?
+}
+
+model Property {
+  id            String    @id @default(uuid())
+  name          String
+  type          String    // single-family, condo, commercial, multi-family, other
+  address       Address?  @relation(fields: [addressId], references: [id])
+  addressId     String?   @unique
+  squareFootage Float
+  bedrooms      Int?
+  bathrooms     Int?
+  yearBuilt     Int?
+  photos        Photo[]
+  documents     Document[]
+  systems       SystemInstallation[]
+  serviceHistory ServiceRecord[]
+  customer      Customer  @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  customerId    String
+  projects      Project[]
+  proposals     Proposal[]
+}
+
+model Photo {
+  id          String    @id @default(uuid())
+  url         String
+  property    Property  @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+  propertyId  String
+  uploadedAt  DateTime  @default(now())
+  uploadedBy  String
+}
+
+model Document {
+  id          String    @id @default(uuid())
+  name        String
+  url         String
+  type        String
+  property    Property? @relation(fields: [propertyId], references: [id], onDelete: SetNull)
+  propertyId  String?
+  project     Project?  @relation(fields: [projectId], references: [id], onDelete: SetNull)
+  projectId   String?
+  uploadedAt  DateTime  @default(now())
+  uploadedBy  String
+}
+
+model SystemInstallation {
+  id          String    @id @default(uuid())
+  type        String
+  details     String
+  installDate DateTime?
+  lastService DateTime?
+  property    Property  @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+  propertyId  String
+}
+
+model ServiceRecord {
+  id          String    @id @default(uuid())
+  date        DateTime
+  type        String
+  description String
+  technician  String
+  cost        Float
+  property    Property  @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+  propertyId  String
+}
+
+model Project {
+  id          String      @id @default(uuid())
+  name        String
+  description String
+  status      String      // planning, in-progress, completed, on-hold, cancelled
+  startDate   DateTime
+  endDate     DateTime?
+  property    Property    @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+  propertyId  String
+  teamMembers ProjectTeamMember[]
+  milestones  Milestone[]
+  budget      Budget?
+  documents   Document[]
+  customer    Customer    @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  customerId  String
+  proposals   Proposal[]
+}
+
+model ProjectTeamMember {
+  id          String    @id @default(uuid())
+  project     Project   @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  projectId   String
+  teamMember  TeamMember @relation(fields: [teamMemberId], references: [id], onDelete: Cascade)
+  teamMemberId String
+}
+
+model TeamMember {
+  id        String    @id @default(uuid())
+  name      String
+  role      String
+  email     String
+  phone     String
+  projects  ProjectTeamMember[]
+}
+
+model Milestone {
+  id            String    @id @default(uuid())
+  name          String
+  description   String
+  status        String    // pending, in-progress, completed, overdue
+  dueDate       DateTime
+  completedDate DateTime?
+  assignedTo    String?
+  project       Project   @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  projectId     String
+}
+
+model Budget {
+  id          String    @id @default(uuid())
+  currency    String
+  total       Float
+  spent       Float
+  remaining   Float
+  lineItems   BudgetLineItem[]
+  project     Project   @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  projectId   String    @unique
+}
+
+model BudgetLineItem {
+  id          String    @id @default(uuid())
+  description String
+  amount      Float
+  category    String
+  budget      Budget    @relation(fields: [budgetId], references: [id], onDelete: Cascade)
+  budgetId    String
+}
+
+model Interaction {
+  id          String    @id @default(uuid())
+  type        String    // call, email, meeting, site-visit, other
+  date        DateTime
+  summary     String
+  details     String
+  followUpDate DateTime?
+  followUpNotes String?
+  createdBy   String
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  customer    Customer  @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  customerId  String
+}
+
+model CustomerMetrics {
+  id                    String    @id @default(uuid())
+  lifetimeValue        Float
+  projectsCompleted    Int
+  averageProjectValue  Float
+  lastInteraction      DateTime?
+  nextScheduledContact DateTime?
+  customer             Customer  @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  customerId           String    @unique
+}
+
+model Proposal {
+  id                String    @id @default(uuid())
+  name              String
+  description       String?
+  customerPersona   String    // homeowner, business-owner, property-manager
+  voiceTranscript   String?   // AI-generated transcript from voice notes
+  aiSummary         String?   // AI-generated summary of key points
+  totalAmount       Float
+  validUntil        DateTime?
+  portalToken       String?   // Unique token for client portal access
+  portalExpiresAt   DateTime? // When the portal access expires
+  portalViewCount   Int       @default(0)
+  portalLastViewed  DateTime?
+  clientStatus      String?   // PENDING, APPROVED, REJECTED
+  clientFeedback    String?
+  clientSignature   String?
+  approvedBy        String?
+  isExistingCustomer Boolean  @default(false)
+  prospectName      String?
+  prospectCompany   String?
+  prospectEmail     String?
+  prospectPhone     String?
+  prospectStatus    String?   // CONTACTED, QUALIFIED, DISQUALIFIED
+  customer          Customer? @relation(fields: [customerId], references: [id])
+  customerId        String?
+  property          Property? @relation(fields: [propertyId], references: [id])
+  propertyId        String?
+  project           Project?  @relation(fields: [projectId], references: [id])
+  projectId         String?
+  items             ProposalItem[]
+  emailLogs         EmailLog[]
+  createdBy         String
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+}
+
+model ProposalItem {
+  id          String    @id @default(uuid())
+  proposal    Proposal  @relation(fields: [proposalId], references: [id], onDelete: Cascade)
+  proposalId  String
+  product     Product   @relation(fields: [productId], references: [id])
+  productId   String
+  quantity    Int
+  unitPrice   Float
+  notes       String?
+  sortOrder   Int       @default(0)
+}
+
+model Product {
+  id            String    @id @default(uuid())
+  name          String
+  description   String
+  category      String    // security, automation, audio-video, lighting, etc.
+  brand         String
+  model         String
+  sku           String?
+  basePrice     Float
+  goodTierPrice Float?
+  betterTierPrice Float?
+  bestTierPrice Float?
+  specifications Json?
+  compatibility Json?
+  installation  Json?
+  proposalItems ProposalItem[]
+}
+
+model ProposalPersona {
+  id            String    @id @default(uuid())
+  name          String    // e.g., "Homeowner", "Business Owner"
+  description   String
+  painPoints    String[]  // Array of common pain points
+  goals         String[]  // Array of typical goals
+  preferences   String[]  // Array of general preferences
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+}
+
+model EmailConfig {
+  id                String    @id @default(uuid())
+  smtpHost          String
+  smtpPort          Int
+  smtpUser          String
+  smtpPass          String
+  fromEmail         String
+  fromName          String
+  replyToEmail      String?
+  defaultSignature  String?
+  templates         EmailTemplate[]
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+
+  @@map("email_config")
+}
+
+model EmailTemplate {
+  id            String    @id @default(uuid())
+  name          String    // e.g., "Proposal Approved", "Follow Up"
+  description   String
+  subject       String
+  bodyHtml      String
+  bodyText      String
+  variables     String[]  // Array of variable names used in template
+  config        EmailConfig @relation(fields: [configId], references: [id])
+  configId      String
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  @@map("email_templates")
+}
+
+model EmailLog {
+  id            String      @id @default(uuid())
+  proposal      Proposal    @relation(fields: [proposalId], references: [id])
+  proposalId    String
+  templateName  String?     // Name of template used, if any
+  subject       String
+  to            String
+  from          String
+  cc            String?
+  bcc           String?
+  bodyHtml      String
+  bodyText      String
+  status        EmailStatus
+  error         String?     // Error message if sending failed
+  sentAt        DateTime?   // When the email was actually sent
+  openedAt      DateTime?   // When the email was first opened
+  clickedAt     DateTime?   // When any link in the email was first clicked
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
+
+  @@map("email_logs")
+}
+
+enum EmailStatus {
+  DRAFT
+  QUEUED
+  SENDING
+  SENT
+  FAILED
+  OPENED
+  CLICKED
+  BOUNCED
+  SPAM
+  UNSUBSCRIBED
+} 
