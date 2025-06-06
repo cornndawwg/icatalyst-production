@@ -164,8 +164,51 @@ app.get('/debug/env', (req, res) => {
 // Serve static files for uploads
 app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
 
-// Root endpoint
-app.get('/', (req, res) => {
+// Serve Next.js static files in production
+if (process.env.NODE_ENV === 'production') {
+  console.log('🎯 Production mode: Setting up Next.js static file serving');
+  
+  // Serve Next.js static assets
+  const nextStaticPath = path.join(__dirname, '../out');
+  const nextBuildPath = path.join(__dirname, '../.next');
+  
+  console.log('Next.js static path:', nextStaticPath);
+  console.log('Next.js build path:', nextBuildPath);
+  
+  // Serve Next.js static files
+  app.use('/_next', express.static(path.join(nextBuildPath, 'static')));
+  app.use('/static', express.static(path.join(nextStaticPath, 'static')));
+  
+  // Try to serve from out directory first (static export), then from .next
+  try {
+    const fs = require('fs');
+    if (fs.existsSync(nextStaticPath)) {
+      console.log('✅ Found Next.js static export directory');
+      app.use(express.static(nextStaticPath));
+    } else if (fs.existsSync(nextBuildPath)) {
+      console.log('✅ Found Next.js build directory');
+      app.use(express.static(nextBuildPath));
+    } else {
+      console.warn('⚠️ No Next.js build directory found - API only mode');
+    }
+  } catch (err) {
+    console.warn('⚠️ Error setting up Next.js static serving:', err.message);
+  }
+}
+
+// Mount API routes with /api prefix
+if (routes.auth) app.use('/api/auth', routes.auth);
+if (routes.customers) app.use('/api/customers', routes.customers);
+if (routes.upload) app.use('/api/upload', routes.upload);
+if (routes.proposals) app.use('/api/proposals', routes.proposals);
+if (routes.products) app.use('/api/products', routes.products);
+if (routes.proposalPersonas) app.use('/api/proposal-personas', routes.proposalPersonas);
+if (routes.properties) app.use('/api/properties', routes.properties);
+if (routes.testDb) app.use('/api/test-db', routes.testDb);
+if (routes.portal) app.use('/api/portal', routes.portal);
+
+// API root endpoint (for debugging)
+app.get('/api', (req, res) => {
   res.json({ 
     message: 'iCatalyst Smart Home CRM API Server',
     version: '1.0.0',
@@ -188,16 +231,82 @@ app.get('/', (req, res) => {
   });
 });
 
-// Mount routes safely
-if (routes.auth) app.use('/api/auth', routes.auth);
-if (routes.customers) app.use('/api/customers', routes.customers);
-if (routes.upload) app.use('/api/upload', routes.upload);
-if (routes.proposals) app.use('/api/proposals', routes.proposals);
-if (routes.products) app.use('/api/products', routes.products);
-if (routes.proposalPersonas) app.use('/api/proposal-personas', routes.proposalPersonas);
-if (routes.properties) app.use('/api/properties', routes.properties);
-if (routes.testDb) app.use('/api/test-db', routes.testDb);
-if (routes.portal) app.use('/api/portal', routes.portal);
+// Root endpoint - serve Next.js app or API info
+app.get('/', (req, res) => {
+  if (process.env.NODE_ENV === 'production') {
+    // In production, try to serve Next.js index.html
+    const indexPath = path.join(__dirname, '../out/index.html');
+    const nextIndexPath = path.join(__dirname, '../.next/server/pages/index.html');
+    
+    try {
+      const fs = require('fs');
+      if (fs.existsSync(indexPath)) {
+        res.sendFile(indexPath);
+      } else if (fs.existsSync(nextIndexPath)) {
+        res.sendFile(nextIndexPath);
+      } else {
+        // Fallback to API info if no frontend found
+        res.json({ 
+          message: 'iCatalyst Smart Home CRM - API Server',
+          version: '1.0.0',
+          status: 'running',
+          mode: 'API Only',
+          environment: process.env.NODE_ENV,
+          timestamp: new Date().toISOString(),
+          note: 'Frontend build not found - serving API endpoints only',
+          api_root: '/api'
+        });
+      }
+    } catch (err) {
+      console.error('Error serving frontend:', err);
+      res.json({ 
+        message: 'iCatalyst Smart Home CRM - API Server',
+        version: '1.0.0',
+        status: 'running',
+        error: 'Frontend serving error',
+        api_root: '/api'
+      });
+    }
+  } else {
+    // Development mode - show API info
+    res.json({ 
+      message: 'iCatalyst Smart Home CRM - Development API Server',
+      version: '1.0.0',
+      status: 'running',
+      environment: 'development',
+      frontend: 'http://localhost:3002',
+      api_root: '/api'
+    });
+  }
+});
+
+// Catch-all route for Next.js client-side routing in production
+if (process.env.NODE_ENV === 'production') {
+  app.get('*', (req, res) => {
+    // Don't intercept API routes
+    if (req.path.startsWith('/api/')) {
+      return res.status(404).json({ error: 'API endpoint not found' });
+    }
+    
+    // Serve index.html for all other routes (client-side routing)
+    const indexPath = path.join(__dirname, '../out/index.html');
+    const nextIndexPath = path.join(__dirname, '../.next/server/pages/index.html');
+    
+    try {
+      const fs = require('fs');
+      if (fs.existsSync(indexPath)) {
+        res.sendFile(indexPath);
+      } else if (fs.existsSync(nextIndexPath)) {
+        res.sendFile(nextIndexPath);
+      } else {
+        res.status(404).json({ error: 'Frontend not found' });
+      }
+    } catch (err) {
+      console.error('Error serving frontend fallback:', err);
+      res.status(404).json({ error: 'Frontend serving error' });
+    }
+  });
+}
 
 // Error handling
 app.use(errorHandler);
@@ -218,7 +327,14 @@ const server = app.listen(PORT, '0.0.0.0', () => {
   console.log(`🌐 Environment: ${process.env.NODE_ENV || 'development'}`);
   console.log(`📊 Health check: http://localhost:${PORT}/health`);
   console.log(`🔍 Debug endpoint: http://localhost:${PORT}/debug/env`);
-  console.log(`🏠 API Root: http://localhost:${PORT}/`);
+  console.log(`🏠 Application: http://localhost:${PORT}/`);
+  console.log(`🔌 API Root: http://localhost:${PORT}/api`);
+  
+  if (process.env.NODE_ENV === 'production') {
+    console.log('🎯 Production mode: Serving Next.js frontend + Express API');
+  } else {
+    console.log('🛠️ Development mode: API server only');
+  }
   
   // Final environment check
   if (!process.env.DATABASE_URL) {
@@ -227,7 +343,7 @@ const server = app.listen(PORT, '0.0.0.0', () => {
     console.log('✅ DATABASE_URL configured successfully');
   }
   
-  logger.info(`iCatalyst CRM API Server started successfully on port ${PORT}`);
+  logger.info(`iCatalyst CRM Server started successfully on port ${PORT}`);
 }).on('error', (err) => {
   console.error('❌ Server startup error:', err);
   if (err.code === 'EADDRINUSE') {
