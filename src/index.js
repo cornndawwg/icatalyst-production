@@ -229,7 +229,7 @@ app.get('/', (req, res) => {
 });
 
 // Handle 404 for unknown routes
-app.use('*', (req, res) => {
+app.all('*', (req, res) => {
   res.status(404).json({ 
     error: 'Endpoint not found',
     message: 'This is an API-only backend. Please check the available endpoints.',
