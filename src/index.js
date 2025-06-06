@@ -15,7 +15,6 @@ if (result.error) {
 // Railway environment variable fallbacks
 if (!process.env.DATABASE_URL) {
   console.warn('⚠️ DATABASE_URL missing - Railway variable configuration issue detected');
-  // Railway PostgreSQL service typically uses this internal format
   process.env.DATABASE_URL = process.env.PGURL || 
     `postgresql://${process.env.PGUSER}:${process.env.PGPASSWORD}@${process.env.PGHOST}:${process.env.PGPORT}/${process.env.PGDATABASE}`;
 }
@@ -84,204 +83,82 @@ try {
   };
 }
 
-// Load routes with error handling
+// Load routes with error handling - STABLE CORE ONLY
 const routes = {};
 try {
-  // TEMPORARILY DISABLED: Auth routes causing path-to-regexp error - will debug separately
-  // routes.auth = require('./routes/auth.routes');
+  // DEPLOY STABLE BACKEND: Known working routes only
   routes.customers = require('./routes/customers.routes');
   routes.upload = require('./routes/upload.routes');
-  routes.proposals = require('./routes/proposals.routes');
   routes.products = require('./routes/products.routes');
   routes.proposalPersonas = require('./routes/proposal-personas.routes');
   routes.properties = require('./routes/properties.routes');
   routes.testDb = require('./routes/test-db.routes');
   routes.portal = require('./routes/portal.routes');
-  console.log('✅ Core API routes loaded successfully (auth temporarily disabled for deployment)');
+  console.log('✅ Stable core routes loaded successfully');
 } catch (err) {
   console.error('❌ Route loading failed:', err.message);
-  // Continue with available routes
 }
 
 // Initialize Express app
 const app = express();
 
-// Enhanced CORS configuration for Railway and local development
+// CORS configuration
 const corsOptions = {
   origin: [
-    'http://localhost:3000',
-    'http://localhost:3001', 
-    'http://localhost:3002',
-    'http://127.0.0.1:3000',
-    'http://127.0.0.1:3001', 
-    'http://127.0.0.1:3002',
-    // Railway production URLs
-    /\.railway\.app$/,
-    /\.up\.railway\.app$/,
-    // Frontend deployments
-    /\.vercel\.app$/,
-    /\.netlify\.app$/
+    'http://localhost:3000', 'http://localhost:3001', 'http://localhost:3002',
+    /\.railway\.app$/, /\.vercel\.app$/, /\.netlify\.app$/
   ],
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization']
 };
 
-// Middleware
 app.use(cors(corsOptions));
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
-// Health check endpoint for Railway
+// Health check
 app.get('/health', (req, res) => {
-  res.status(200).json({ 
-    status: 'healthy',
-    timestamp: new Date().toISOString(),
-    uptime: process.uptime(),
-    mode: 'API-ONLY',
-    environment: {
-      NODE_ENV: process.env.NODE_ENV,
-      DATABASE_URL_present: !!process.env.DATABASE_URL,
-      JWT_SECRET_present: !!process.env.JWT_SECRET,
-      deployment_mode: 'stable_api_backend'
-    }
-  });
+  res.json({ status: 'healthy', mode: 'STABLE_CORE_API', timestamp: new Date().toISOString() });
 });
 
-// Environment debug endpoint
-app.get('/debug/env', (req, res) => {
-  res.json({
-    NODE_ENV: process.env.NODE_ENV,
-    PORT: PORT,
-    DATABASE_URL_present: !!process.env.DATABASE_URL,
-    DATABASE_URL_length: process.env.DATABASE_URL ? process.env.DATABASE_URL.length : 0,
-    JWT_SECRET_present: !!process.env.JWT_SECRET,
-    JWT_SECRET_length: process.env.JWT_SECRET ? process.env.JWT_SECRET.length : 0,
-    deployment_mode: 'api_only',
-    RAILWAY_VARS: {
-      PGHOST: process.env.PGHOST,
-      PGPORT: process.env.PGPORT,
-      PGDATABASE: process.env.PGDATABASE,
-      PGUSER: process.env.PGUSER,
-      PGPASSWORD_present: !!process.env.PGPASSWORD,
-      PGURL_present: !!process.env.PGURL
-    }
-  });
-});
-
-// Serve static files for uploads
-app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
-
-// Mount API routes with /api prefix
-// TEMPORARILY DISABLED: Auth routes causing path-to-regexp error
-// if (routes.auth) app.use('/api/auth', routes.auth);
+// Mount working routes
 if (routes.customers) app.use('/api/customers', routes.customers);
 if (routes.upload) app.use('/api/upload', routes.upload);
-if (routes.proposals) app.use('/api/proposals', routes.proposals);
 if (routes.products) app.use('/api/products', routes.products);
 if (routes.proposalPersonas) app.use('/api/proposal-personas', routes.proposalPersonas);
 if (routes.properties) app.use('/api/properties', routes.properties);
 if (routes.testDb) app.use('/api/test-db', routes.testDb);
 if (routes.portal) app.use('/api/portal', routes.portal);
 
-// API root endpoint (for debugging)
+// API info
 app.get('/api', (req, res) => {
   res.json({ 
-    message: 'iCatalyst Smart Home CRM API Server',
-    version: '1.0.0',
-    status: 'running',
-    mode: 'API-ONLY (Stable Backend)',
-    environment: process.env.NODE_ENV || 'development',
-    timestamp: new Date().toISOString(),
-    endpoints: {
-      health: '/health',
-      debug: '/debug/env',
-      auth: '/api/auth',
-      customers: '/api/customers',
-      upload: '/api/upload',
-      proposals: '/api/proposals',
-      products: '/api/products',
-      proposalPersonas: '/api/proposal-personas',
-      properties: '/api/properties',
-      testDb: '/api/test-db',
-      portal: '/api/portal'
-    },
-    frontend_note: 'Frontend deployment will be handled separately',
-    cors_enabled: true
-  });
-});
-
-// Root endpoint - API info only
-app.get('/', (req, res) => {
-  res.json({ 
-    message: 'iCatalyst Smart Home CRM - API Backend',
-    version: '1.0.0',
+    message: 'iCatalyst Smart Home CRM - Stable Core API',
     status: 'operational',
-    mode: 'API-ONLY',
-    environment: process.env.NODE_ENV,
-    timestamp: new Date().toISOString(),
-    api_root: '/api',
-    documentation: {
-      health_check: '/health',
-      environment_debug: '/debug/env',
-      api_endpoints: '/api'
-    },
-    note: 'This is the stable API backend. Frontend will be deployed separately to avoid integration issues.'
+    available_endpoints: ['customers', 'upload', 'products', 'proposal-personas', 'properties', 'test-db', 'portal'],
+    note: 'Auth and Proposals routes temporarily disabled - debugging path-to-regexp issue'
   });
 });
 
-// Handle 404 for unknown routes
+app.get('/', (req, res) => {
+  res.json({ message: 'iCatalyst Smart Home CRM - Stable Core Backend', api_root: '/api' });
+});
+
+// 404 handler
 app.all('*', (req, res) => {
-  res.status(404).json({ 
-    error: 'Endpoint not found',
-    message: 'This is an API-only backend. Please check the available endpoints.',
-    available_endpoints: {
-      root: '/',
-      api_info: '/api',
-      health: '/health',
-      debug: '/debug/env'
-    }
-  });
+  res.status(404).json({ error: 'Endpoint not found', api_info: '/api' });
 });
 
-// Error handling
-app.use(errorHandler);
-
-// Graceful shutdown handler
-process.on('SIGTERM', () => {
-  console.log('SIGTERM received, shutting down gracefully');
-  server.close(() => {
-    console.log('Process terminated');
-    process.exit(0);
-  });
-});
-
-// Start server with proper error handling
+// Start server
 const server = app.listen(PORT, '0.0.0.0', () => {
-  console.log('🚀 iCatalyst CRM API Server Started Successfully!');
-  console.log(`📡 Server running on port ${PORT}`);
-  console.log(`🌐 Environment: ${process.env.NODE_ENV || 'development'}`);
-  console.log(`📊 Health check: http://localhost:${PORT}/health`);
-  console.log(`🔍 Debug endpoint: http://localhost:${PORT}/debug/env`);
-  console.log(`🏠 API Root: http://localhost:${PORT}/`);
-  console.log(`🔌 API Endpoints: http://localhost:${PORT}/api`);
-  console.log(`⚡ Mode: API-ONLY (Stable Backend)`);
-  console.log(`🎯 Status: Next.js integration removed - API operational`);
-  console.log(`📋 Available Routes: auth, customers, upload, proposals, products, properties, portal`);
-  
-  // Final environment check
-  if (!process.env.DATABASE_URL) {
-    console.error('❌ DATABASE_URL still missing after fallbacks!');
-  } else {
-    console.log('✅ DATABASE_URL configured successfully');
-  }
-  
-  logger.info(`iCatalyst CRM API Server started successfully on port ${PORT} - API-ONLY mode`);
+  console.log('🚀 iCatalyst CRM Stable Core API Server Started!');
+  console.log(`📡 Server: http://localhost:${PORT}`);
+  console.log(`📊 Health: http://localhost:${PORT}/health`);
+  console.log(`🔌 API: http://localhost:${PORT}/api`);
+  console.log('✅ Available: customers, upload, products, properties, portal');
+  console.log('⚠️ Temporarily disabled: auth, proposals (debugging path-to-regexp)');
 }).on('error', (err) => {
-  console.error('❌ Server startup error:', err);
-  if (err.code === 'EADDRINUSE') {
-    console.error(`Port ${PORT} is already in use`);
-  }
-  logger.error('Server startup error:', err);
+  console.error('❌ Server error:', err);
   process.exit(1);
 }); 
