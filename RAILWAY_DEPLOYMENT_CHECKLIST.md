@@ -35,8 +35,8 @@ railway service create backend
 railway up --service backend
 ```
 
-**Service Settings:**
-- **Build Command:** `npm run build`
+**Service Settings (Production-Tested):**
+- **Build Command:** *Auto-detect* (Railway handles Node.js builds automatically)
 - **Start Command:** `npm start`
 - **Health Check:** `/health`
 - **Port:** `3001`
@@ -48,11 +48,23 @@ railway service create frontend
 railway up --service frontend
 ```
 
-**Service Settings:**
-- **Build Command:** `npm run build:frontend`
+**Service Settings (Production-Tested):**
+- **Build Command:** *Auto-detect* (Railway handles Next.js builds automatically)
 - **Start Command:** `npm run start:frontend`
 - **Health Check:** `/`
 - **Port:** `3002`
+
+#### ⚠️ **CRITICAL: Railway Command Validation**
+Railway requires different build and start commands to function properly:
+
+**✅ CORRECT Configuration:**
+- Frontend: No buildCommand (auto-detect) + startCommand: `npm run start:frontend`
+- Backend: No buildCommand (auto-detect) + startCommand: `npm start`
+
+**❌ AVOID These Configurations:**
+- Identical build and start commands
+- Manual buildPhase when Railway can auto-detect
+- Using `npm run build` as start command
 
 ### 🔧 **ENVIRONMENT VARIABLES SETUP**
 
@@ -122,6 +134,12 @@ railway up --service frontend
 ```
 
 ### 🚨 **TROUBLESHOOTING GUIDE**
+
+#### **Railway Configuration Issues**
+- **Cache Problems:** Force redeploy with empty commit if Railway uses old configuration
+- **Command Validation:** Ensure buildCommand ≠ startCommand (use auto-detect for builds)
+- **Service Type Detection:** Verify Railway correctly identifies Next.js vs Node.js services
+- **Branch Deployment:** Confirm Railway is deploying from correct git branch
 
 #### **Common Backend Issues**
 - **Database Connection:** Check DATABASE_URL format

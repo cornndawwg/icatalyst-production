@@ -3,7 +3,7 @@ builder = "nixpacks"
 
 [build.nixpacks]
 installPhase = "npm ci"
-buildPhase = "npm run build"
+# Railway auto-detects Node.js builds - no buildPhase needed
 startPhase = "npm start"
 
 [deploy]
@@ -16,4 +16,5 @@ NODE_ENV = "production"
 PORT = "3001"
 
 [services.backend]
+# No static files for API backend
 staticPublishPath = "" 

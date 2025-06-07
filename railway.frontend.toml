@@ -3,7 +3,7 @@ builder = "nixpacks"
 
 [build.nixpacks]
 installPhase = "npm ci"
-buildPhase = "npm run build:frontend"
+# Railway auto-detects Next.js builds - no buildPhase needed
 startPhase = "npm run start:frontend"
 
 [deploy]
@@ -17,4 +17,5 @@ PORT = "3002"
 NEXT_PUBLIC_API_URL = "${{backend.RAILWAY_PUBLIC_DOMAIN}}"
 
 [services.frontend]
+# Next.js static files handled automatically by Railway
 staticPublishPath = ".next/static" 
