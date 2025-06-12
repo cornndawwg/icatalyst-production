@@ -1,4 +1,5 @@
 # Smart Home CRM
+<!-- Force Railway sync after cloud outage -->
 
 A customer relationship management system specifically designed for smart home integrators. This system helps manage customer relationships, properties, projects, and interactions.
 
