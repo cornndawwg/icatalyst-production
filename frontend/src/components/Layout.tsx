@@ -84,7 +84,7 @@ const Layout = ({ children }: LayoutProps) => {
               />
             </ListItemButton>
           </ListItem>
-        )))
+        ))}
       </List>
     </div>
   );
