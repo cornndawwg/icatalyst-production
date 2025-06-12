@@ -10,7 +10,7 @@
     "dev:full": "concurrently \"npm run dev:api\" \"npm run dev\"",
     "build": "next build",
     "build:frontend": "cd frontend && npm ci && npm run build",
-    "start:frontend": "cd frontend && npm run preview",
+    "start:frontend": "cd frontend && npm start",
     "build:all": "npm run build:frontend && npm run build",
     "start": "next start",
     "lint": "next lint",
