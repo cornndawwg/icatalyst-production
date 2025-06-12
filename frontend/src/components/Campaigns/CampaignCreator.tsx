@@ -463,7 +463,8 @@ export default function CampaignCreator() {
                 label="Schedule Send (Optional)"
                 value={campaignData.scheduledDate ? new Date(campaignData.scheduledDate) : null}
                 onChange={(newValue: Date | null) => handleInputChange('scheduledDate', newValue?.toISOString() || null)}
-                renderInput={(params) => <TextField {...params} fullWidth />}
+                slots={{ textField: TextField }}
+                slotProps={{ textField: { fullWidth: true } }}
               />
             </Stack>
           </LocalizationProvider>

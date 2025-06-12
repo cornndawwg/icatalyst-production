@@ -7,6 +7,7 @@ import {
   Drawer,
   List,
   ListItem,
+  ListItemButton,
   ListItemIcon,
   ListItemText,
   IconButton,
@@ -57,33 +58,33 @@ const Layout = ({ children }: LayoutProps) => {
       <Divider />
       <List>
         {menuItems.map((item) => (
-          <ListItem
-            button
-            key={item.text}
-            onClick={() => handleNavigation(item)}
-            selected={!item.external && location.pathname === item.path}
-            sx={{
-              '&.Mui-selected': {
-                backgroundColor: theme.palette.primary.main + '20',
-                '&:hover': {
-                  backgroundColor: theme.palette.primary.main + '30',
-                },
-              },
-            }}
-          >
-            <ListItemIcon sx={{ 
-              color: (!item.external && location.pathname === item.path) ? theme.palette.primary.main : 'inherit'
-            }}>
-              {item.icon}
-            </ListItemIcon>
-            <ListItemText 
-              primary={item.text}
+          <ListItem key={item.text} disablePadding>
+            <ListItemButton
+              onClick={() => handleNavigation(item)}
+              selected={!item.external && location.pathname === item.path}
               sx={{
-                color: (!item.external && location.pathname === item.path) ? theme.palette.primary.main : 'inherit'
+                '&.Mui-selected': {
+                  backgroundColor: theme.palette.primary.main + '20',
+                  '&:hover': {
+                    backgroundColor: theme.palette.primary.main + '30',
+                  },
+                },
               }}
-            />
+            >
+              <ListItemIcon sx={{ 
+                color: (!item.external && location.pathname === item.path) ? theme.palette.primary.main : 'inherit'
+              }}>
+                {item.icon}
+              </ListItemIcon>
+              <ListItemText 
+                primary={item.text}
+                sx={{
+                  color: (!item.external && location.pathname === item.path) ? theme.palette.primary.main : 'inherit'
+                }}
+              />
+            </ListItemButton>
           </ListItem>
-        ))}
+        )))
       </List>
     </div>
   );
