@@ -15,8 +15,8 @@ import PhoneAndroidIcon from '@mui/icons-material/PhoneAndroid';
 import CodeIcon from '@mui/icons-material/Code';
 import DeleteIcon from '@mui/icons-material/Delete';
 import ContentCopyIcon from '@mui/icons-material/ContentCopy';
-import { DragDropContext, Droppable, Draggable } from '@hello-pangea/dnd';
-import type { DropResult, DroppableProps, DraggableProps } from '@hello-pangea/dnd';
+import { DragDropContext, Droppable, Draggable, DropResult, DroppableProvided, DraggableProvided, DraggableStateSnapshot } from '@hello-pangea/dnd';
+import type { DroppableProps, DraggableProps } from '@hello-pangea/dnd';
 import ComponentSidebar from './ComponentSidebar';
 import PropertiesPanel from './PropertiesPanel';
 import { EmailComponent, ComponentType, ComponentProps, TextComponentProps, ImageComponentProps, ButtonComponentProps, DividerComponentProps, SocialComponentProps } from './types';
@@ -294,7 +294,7 @@ export default function EmailBuilder({ value, onChange, onSendTest }: EmailBuild
           >
             <DragDropContext onDragEnd={handleDragEnd}>
               <DroppableComponent droppableId="email-builder">
-                {(provided) => (
+                {(provided: DroppableProvided) => (
                   <Box
                     ref={provided.innerRef}
                     {...provided.droppableProps}
@@ -339,7 +339,7 @@ export default function EmailBuilder({ value, onChange, onSendTest }: EmailBuild
                           draggableId={component.id}
                           index={index}
                         >
-                          {(dragProvided, dragSnapshot) => (
+                          {(dragProvided: DraggableProvided, dragSnapshot: DraggableStateSnapshot) => (
                             <Box
                               ref={dragProvided.innerRef}
                               {...dragProvided.draggableProps}

@@ -33,7 +33,7 @@ import AddIcon from '@mui/icons-material/Add';
 import { useNavigate } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
 import { RootState } from '../../store';
-import { addContactsToCampaign } from '../../store/slices/campaignSlice';
+import { addContactsToCampaign, Campaign } from '../../store/slices/campaignSlice';
 
 interface Professional {
   id: string;
@@ -62,7 +62,7 @@ export default function ResultsTable({ results }: ResultsTableProps) {
   const [selectedCampaignId, setSelectedCampaignId] = useState<string | null>(null);
 
   const campaigns = useSelector((state: RootState) => 
-    state.campaigns.campaigns.filter(c => c.status === 'draft' || c.status === 'scheduled')
+    state.campaigns.campaigns.filter((c: Campaign) => c.status === 'draft' || c.status === 'scheduled')
   );
 
   const handleSelectAllClick = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -141,7 +141,7 @@ export default function ResultsTable({ results }: ResultsTableProps) {
   const isSelected = (id: string) => selected.indexOf(id) !== -1;
 
   const selectedCampaign = selectedCampaignId ? 
-    campaigns.find(c => c.id === selectedCampaignId) : null;
+    campaigns.find((c: Campaign) => c.id === selectedCampaignId) : null;
 
   return (
     <Box>
@@ -275,7 +275,7 @@ export default function ResultsTable({ results }: ResultsTableProps) {
         <DialogContent>
           {campaigns.length > 0 ? (
             <List>
-              {campaigns.map((campaign, index) => (
+              {campaigns.map((campaign: Campaign, index: number) => (
                 <Fragment key={campaign.id}>
                   {index > 0 && <Divider />}
                   <ListItem>

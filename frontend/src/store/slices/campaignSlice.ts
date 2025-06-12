@@ -64,21 +64,21 @@ const campaignSlice = createSlice({
   name: 'campaigns',
   initialState,
   reducers: {
-    selectCampaign: (state, action: PayloadAction<string>) => {
-      state.selectedCampaign = state.campaigns.find(c => c.id === action.payload) || null;
+    selectCampaign: (state: CampaignState, action: PayloadAction<string>) => {
+      state.selectedCampaign = state.campaigns.find((c: Campaign) => c.id === action.payload) || null;
     },
     
-    addContactsToCampaign: (state, action: PayloadAction<{
+    addContactsToCampaign: (state: CampaignState, action: PayloadAction<{
       campaignId: string;
       contacts: CampaignContact[];
     }>) => {
-      const campaign = state.campaigns.find(c => c.id === action.payload.campaignId);
+      const campaign = state.campaigns.find((c: Campaign) => c.id === action.payload.campaignId);
       if (campaign) {
         const newContacts = action.payload.contacts.filter(
-          newContact => !campaign.contacts.some(existing => existing.id === newContact.id)
+          (newContact: CampaignContact) => !campaign.contacts.some((existing: CampaignContact) => existing.id === newContact.id)
         );
         
-        campaign.contacts.push(...newContacts.map(contact => ({
+        campaign.contacts.push(...newContacts.map((contact: CampaignContact) => ({
           ...contact,
           dateAdded: new Date().toISOString(),
         })));
@@ -88,20 +88,20 @@ const campaignSlice = createSlice({
       }
     },
     
-    removeContactFromCampaign: (state, action: PayloadAction<{
+    removeContactFromCampaign: (state: CampaignState, action: PayloadAction<{
       campaignId: string;
       contactId: string;
     }>) => {
-      const campaign = state.campaigns.find(c => c.id === action.payload.campaignId);
+      const campaign = state.campaigns.find((c: Campaign) => c.id === action.payload.campaignId);
       if (campaign) {
         campaign.contacts = campaign.contacts.filter(
-          contact => contact.id !== action.payload.contactId
+          (contact: CampaignContact) => contact.id !== action.payload.contactId
         );
         campaign.lastModified = new Date().toISOString();
       }
     },
     
-    createCampaign: (state, action: PayloadAction<Omit<Campaign, 'id' | 'stats' | 'contacts' | 'createdAt' | 'lastModified'>>) => {
+    createCampaign: (state: CampaignState, action: PayloadAction<Omit<Campaign, 'id' | 'stats' | 'contacts' | 'createdAt' | 'lastModified'>>) => {
       const timestamp = new Date().toISOString();
       const newCampaign: Campaign = {
         ...action.payload,
@@ -124,11 +124,11 @@ const campaignSlice = createSlice({
       };
     },
     
-    updateCampaign: (state, action: PayloadAction<{
+    updateCampaign: (state: CampaignState, action: PayloadAction<{
       id: string;
       updates: Partial<Omit<Campaign, 'id' | 'stats' | 'contacts' | 'createdAt' | 'lastModified'>>;
     }>) => {
-      const campaign = state.campaigns.find(c => c.id === action.payload.id);
+      const campaign = state.campaigns.find((c: Campaign) => c.id === action.payload.id);
       if (campaign) {
         Object.assign(campaign, {
           ...action.payload.updates,
@@ -144,8 +144,8 @@ const campaignSlice = createSlice({
       }
     },
 
-    deleteCampaign: (state, action: PayloadAction<string>) => {
-      const campaignIndex = state.campaigns.findIndex(c => c.id === action.payload);
+    deleteCampaign: (state: CampaignState, action: PayloadAction<string>) => {
+      const campaignIndex = state.campaigns.findIndex((c: Campaign) => c.id === action.payload);
       if (campaignIndex !== -1) {
         const campaignName = state.campaigns[campaignIndex].name;
         state.campaigns.splice(campaignIndex, 1);
@@ -159,8 +159,8 @@ const campaignSlice = createSlice({
       }
     },
 
-    duplicateCampaign: (state, action: PayloadAction<string>) => {
-      const originalCampaign = state.campaigns.find(c => c.id === action.payload);
+    duplicateCampaign: (state: CampaignState, action: PayloadAction<string>) => {
+      const originalCampaign = state.campaigns.find((c: Campaign) => c.id === action.payload);
       if (originalCampaign) {
         const timestamp = new Date().toISOString();
         const duplicatedCampaign: Campaign = {
@@ -174,7 +174,7 @@ const campaignSlice = createSlice({
             clicked: 0,
             replied: 0,
           },
-          contacts: originalCampaign.contacts.map(contact => ({
+          contacts: originalCampaign.contacts.map((contact: CampaignContact) => ({
             ...contact,
             dateAdded: timestamp,
           })),
@@ -190,11 +190,11 @@ const campaignSlice = createSlice({
       }
     },
     
-    clearRecentlyAddedContacts: (state) => {
+    clearRecentlyAddedContacts: (state: CampaignState) => {
       state.recentlyAddedContacts = [];
     },
 
-    clearLastAction: (state) => {
+    clearLastAction: (state: CampaignState) => {
       state.lastAction = {
         type: null,
         campaignName: null,

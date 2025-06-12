@@ -1,5 +1,5 @@
 import { Box, Paper, Typography } from '@mui/material';
-import { Draggable, Droppable } from '@hello-pangea/dnd';
+import { Draggable, Droppable, DroppableProvided, DraggableProvided, DraggableStateSnapshot } from '@hello-pangea/dnd';
 import TextFieldsIcon from '@mui/icons-material/TextFields';
 import ImageIcon from '@mui/icons-material/Image';
 import SmartButtonIcon from '@mui/icons-material/SmartButton';
@@ -38,7 +38,7 @@ const ComponentSidebar: React.FC = () => {
       </Typography>
       
       <Droppable droppableId="sidebar" isDropDisabled>
-        {(provided) => (
+        {(provided: DroppableProvided) => (
           <Box
             ref={provided.innerRef}
             {...provided.droppableProps}
@@ -49,7 +49,7 @@ const ComponentSidebar: React.FC = () => {
                 draggableId={item.type}
                 index={index}
               >
-                {(provided, snapshot) => (
+                {(provided: DraggableProvided, snapshot: DraggableStateSnapshot) => (
                   <Box
                     ref={provided.innerRef}
                     {...provided.draggableProps}

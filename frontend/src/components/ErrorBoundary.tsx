@@ -57,7 +57,7 @@ class ErrorBoundary extends Component<Props, State> {
             <Typography variant="body2" color="text.secondary" gutterBottom>
               {this.state.error?.message || 'An unexpected error occurred'}
             </Typography>
-            {process.env.NODE_ENV === 'development' && this.state.error && (
+            {import.meta.env.DEV && this.state.error && (
               <Box sx={{ mt: 2 }}>
                 <Typography variant="caption" component="pre" sx={{ fontSize: '0.75rem' }}>
                   {this.state.error.stack}

@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import {
   Box,
   Paper,
@@ -9,7 +10,7 @@ import {
   InputLabel,
   Stack,
 } from '@mui/material';
-import { ChromePicker } from 'react-color';
+import { ChromePicker, ColorResult } from 'react-color';
 import { EmailComponent, ComponentProps } from './types';
 
 interface PropertiesPanelProps {
@@ -18,6 +19,9 @@ interface PropertiesPanelProps {
 }
 
 const PropertiesPanel: React.FC<PropertiesPanelProps> = ({ component, onUpdate }) => {
+  const [showColorPicker, setShowColorPicker] = useState(false);
+  const [colorProperty, setColorProperty] = useState<string>('');
+
   if (!component) {
     return (
       <Box
@@ -42,6 +46,11 @@ const PropertiesPanel: React.FC<PropertiesPanelProps> = ({ component, onUpdate }
       ...component.props,
       [field]: value,
     });
+  };
+
+  const handleColorChange = (property: string) => {
+    setColorProperty(property);
+    setShowColorPicker(true);
   };
 
   const renderTextProperties = () => (
@@ -71,12 +80,27 @@ const PropertiesPanel: React.FC<PropertiesPanelProps> = ({ component, onUpdate }
           <MenuItem value="right">Right</MenuItem>
         </Select>
       </FormControl>
-      <Box>
-        <Typography gutterBottom>Color</Typography>
-        <ChromePicker
-          color={(component.props as any).color}
-          onChange={(color) => handleChange('color', color.hex)}
+      <Box sx={{ mt: 2 }}>
+        <Typography variant="subtitle2" gutterBottom>
+          Text Color
+        </Typography>
+        <Box
+          sx={{
+            width: 30,
+            height: 30,
+            bgcolor: (component.props as any).color || '#000000',
+            border: 1,
+            borderColor: 'divider',
+            cursor: 'pointer',
+          }}
+          onClick={() => handleColorChange('color')}
         />
+        {showColorPicker && colorProperty === 'color' && (
+          <ChromePicker
+            color={(component.props as any).color || '#000000'}
+            onChange={(color: ColorResult) => handleChange('color', color.hex)}
+          />
+        )}
       </Box>
     </Stack>
   );
@@ -125,19 +149,49 @@ const PropertiesPanel: React.FC<PropertiesPanelProps> = ({ component, onUpdate }
         value={(component.props as any).url}
         onChange={(e) => handleChange('url', e.target.value)}
       />
-      <Box>
-        <Typography gutterBottom>Background Color</Typography>
-        <ChromePicker
-          color={(component.props as any).backgroundColor}
-          onChange={(color) => handleChange('backgroundColor', color.hex)}
+      <Box sx={{ mt: 2 }}>
+        <Typography variant="subtitle2" gutterBottom>
+          Background Color
+        </Typography>
+        <Box
+          sx={{
+            width: 30,
+            height: 30,
+            bgcolor: (component.props as any).backgroundColor || '#1976d2',
+            border: 1,
+            borderColor: 'divider',
+            cursor: 'pointer',
+          }}
+          onClick={() => handleColorChange('backgroundColor')}
         />
+        {showColorPicker && colorProperty === 'backgroundColor' && (
+          <ChromePicker
+            color={(component.props as any).backgroundColor || '#1976d2'}
+            onChange={(color: ColorResult) => handleChange('backgroundColor', color.hex)}
+          />
+        )}
       </Box>
-      <Box>
-        <Typography gutterBottom>Text Color</Typography>
-        <ChromePicker
-          color={(component.props as any).textColor}
-          onChange={(color) => handleChange('textColor', color.hex)}
+      <Box sx={{ mt: 2 }}>
+        <Typography variant="subtitle2" gutterBottom>
+          Text Color
+        </Typography>
+        <Box
+          sx={{
+            width: 30,
+            height: 30,
+            bgcolor: (component.props as any).textColor || '#ffffff',
+            border: 1,
+            borderColor: 'divider',
+            cursor: 'pointer',
+          }}
+          onClick={() => handleColorChange('textColor')}
         />
+        {showColorPicker && colorProperty === 'textColor' && (
+          <ChromePicker
+            color={(component.props as any).textColor || '#ffffff'}
+            onChange={(color: ColorResult) => handleChange('textColor', color.hex)}
+          />
+        )}
       </Box>
     </Stack>
   );
@@ -162,12 +216,27 @@ const PropertiesPanel: React.FC<PropertiesPanelProps> = ({ component, onUpdate }
         value={(component.props as any).spacing}
         onChange={(e) => handleChange('spacing', Number(e.target.value))}
       />
-      <Box>
-        <Typography gutterBottom>Color</Typography>
-        <ChromePicker
-          color={(component.props as any).color}
-          onChange={(color) => handleChange('color', color.hex)}
+      <Box sx={{ mt: 2 }}>
+        <Typography variant="subtitle2" gutterBottom>
+          Color
+        </Typography>
+        <Box
+          sx={{
+            width: 30,
+            height: 30,
+            bgcolor: (component.props as any).color || '#cccccc',
+            border: 1,
+            borderColor: 'divider',
+            cursor: 'pointer',
+          }}
+          onClick={() => handleColorChange('color')}
         />
+        {showColorPicker && colorProperty === 'color' && (
+          <ChromePicker
+            color={(component.props as any).color || '#cccccc'}
+            onChange={(color: ColorResult) => handleChange('color', color.hex)}
+          />
+        )}
       </Box>
     </Stack>
   );
