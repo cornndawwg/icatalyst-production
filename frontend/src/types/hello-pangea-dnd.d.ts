@@ -52,6 +52,9 @@ declare module '@hello-pangea/dnd' {
 
   export interface DroppableProps {
     droppableId: string;
+    isDropDisabled?: boolean;
+    type?: string;
+    direction?: 'horizontal' | 'vertical';
     children: (
       provided: DroppableProvided,
       snapshot: DroppableStateSnapshot
