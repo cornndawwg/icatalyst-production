@@ -1,8 +1,6 @@
 const express = require('express');
 const router = express.Router();
-const { PrismaClient } = require('../../generated/prisma');
-
-const prisma = new PrismaClient();
+const prisma = require('../utils/prisma');
 
 // GET /api/products?search=term&category=audio&pricingTier=better - Search products
 // GET /api/products/:id - Get specific product

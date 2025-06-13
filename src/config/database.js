@@ -1,57 +1,19 @@
-const sqlite3 = require('sqlite3').verbose();
-const { open } = require('sqlite');
-const path = require('path');
 const { logger } = require('../utils/logger');
+const { PrismaClient } = require('@prisma/client');
 
-// Parse SQLite database path from DATABASE_URL
-const dbPath = process.env.DATABASE_URL
-  ? (process.env.DATABASE_URL.startsWith('file:') 
-     ? process.env.DATABASE_URL.replace('file:', '') 
-     : process.env.DATABASE_URL)
-  : path.join(__dirname, '..', '..', 'database.sqlite');
-
-// Resolve to absolute path
-const absoluteDbPath = path.resolve(dbPath);
+const prisma = new PrismaClient();
 
 logger.info('Database configuration:', {
-  type: 'SQLite',
-  path: absoluteDbPath
+  type: 'PostgreSQL',
+  url: process.env.DATABASE_URL
 });
 
 // Initialize database connection
-let db = null;
-
 async function initializeDatabase() {
   try {
-    db = await open({
-      filename: absoluteDbPath,
-      driver: sqlite3.Database
-    });
-    
+    await prisma.$connect();
     logger.info('Database connection successful');
-
-    // Enable foreign keys
-    await db.run('PRAGMA foreign_keys = ON');
-
-    // Create tables if they don't exist
-    await db.exec(`
-      CREATE TABLE IF NOT EXISTS users (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        full_name TEXT NOT NULL,
-        email TEXT UNIQUE NOT NULL,
-        role TEXT NOT NULL,
-        phone TEXT,
-        password TEXT NOT NULL,
-        last_login DATETIME,
-        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-        updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
-      );
-
-      CREATE INDEX IF NOT EXISTS idx_users_email ON users(email);
-    `);
-
-    logger.info('Database tables initialized');
-    return db;
+    return prisma;
   } catch (error) {
     logger.error('Database initialization error:', {
       error: error.message,
@@ -68,32 +30,15 @@ initializeDatabase().catch(err => {
 });
 
 module.exports = {
+  prisma,
   query: async (sql, params = []) => {
-    if (!db) {
-      throw new Error('Database not initialized');
-    }
-
-    const start = Date.now();
     try {
-      // Determine if it's a SELECT query
-      const isSelect = sql.trim().toLowerCase().startsWith('select');
-      
-      let result;
-      if (isSelect) {
-        result = await db.all(sql, params);
-        return {
-          rows: result || [],
-          rowCount: result?.length || 0,
-          lastID: null
-        };
-      } else {
-        result = await db.run(sql, params);
-        return {
-          rows: [],
-          rowCount: result?.changes || 0,
-          lastID: result?.lastID
-        };
-      }
+      const result = await prisma.$queryRaw`${sql} ${params}`;
+      return {
+        rows: Array.isArray(result) ? result : [],
+        rowCount: Array.isArray(result) ? result.length : 0,
+        lastID: null
+      };
     } catch (error) {
       logger.error('Query error:', {
         sql,
@@ -107,10 +52,10 @@ module.exports = {
   
   // Helper method to get a single row
   queryOne: async (sql, params = []) => {
-    const result = await db.get(sql, params);
-    return result;
+    const result = await prisma.$queryRaw`${sql} ${params}`;
+    return Array.isArray(result) && result.length > 0 ? result[0] : null;
   },
 
   // Get the database instance
-  getDb: () => db
+  getDb: () => prisma
 }; 

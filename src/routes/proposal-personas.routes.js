@@ -1,8 +1,6 @@
 const express = require('express');
 const router = express.Router();
-const { PrismaClient } = require('../../generated/prisma');
-
-const prisma = new PrismaClient();
+const prisma = require('../utils/prisma');
 
 // GET /api/proposal-personas - List all proposal personas
 // GET /api/proposal-personas/:id - Get specific proposal persona

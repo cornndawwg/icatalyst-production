@@ -20,6 +20,7 @@ import {
   alpha,
   Collapse,
 } from '@mui/material';
+import { iCatalystColors } from '../common/BrandedComponents';
 import {
   Dashboard as DashboardIcon,
   People as PeopleIcon,
@@ -39,6 +40,10 @@ import {
   ExpandLess,
   ExpandMore,
   PersonAdd as PersonAddIcon,
+  Email as EmailIcon,
+  Psychology as PsychologyIcon,
+  ShoppingCart as ShoppingCartIcon,
+  Analytics as TrendingUpIcon,
 } from '@mui/icons-material';
 import { useRouter } from 'next/router';
 import Link from 'next/link';
@@ -126,10 +131,10 @@ const navigationItems: NavigationItem[] = [
     description: 'Active and completed projects'
   },
   {
-    label: 'Debug Console',
-    href: '/debug',
-    icon: <SettingsIcon />,
-    description: 'API connectivity debug tools'
+    label: 'Analytics',
+    href: '/executive-dashboard',
+    icon: <TrendingUpIcon />,
+    description: 'Executive dashboard and analytics'
   },
 ];
 
@@ -138,7 +143,7 @@ interface AppLayoutProps {
   title?: string;
 }
 
-export default function AppLayout({ children, title = 'Smart Home CRM' }: AppLayoutProps) {
+export default function AppLayout({ children, title = 'iCatalyst CRM' }: AppLayoutProps) {
   const router = useRouter();
   const theme = useTheme();
   const [mobileOpen, setMobileOpen] = useState(false);
@@ -197,10 +202,11 @@ export default function AppLayout({ children, title = 'Smart Home CRM' }: AppLay
               ml: isSubItem ? 4 : 2,
               borderRadius: 2,
               '&.Mui-selected': {
-                backgroundColor: alpha(theme.palette.primary.main, 0.1),
-                color: theme.palette.primary.main,
+                backgroundColor: alpha(iCatalystColors.iCatalystBlue, 0.1),
+                color: iCatalystColors.iCatalystBlue,
+                fontWeight: 500,
                 '&:hover': {
-                  backgroundColor: alpha(theme.palette.primary.main, 0.2),
+                  backgroundColor: alpha(iCatalystColors.iCatalystBlue, 0.15),
                 },
               },
               '&:hover': {
@@ -221,11 +227,14 @@ export default function AppLayout({ children, title = 'Smart Home CRM' }: AppLay
               secondary={!isSubItem ? item.description : undefined}
               primaryTypographyProps={{
                 fontSize: isSubItem ? '0.875rem' : '0.95rem',
-                fontWeight: (isActive || hasActiveSubItem) ? 600 : 400,
+                fontWeight: (isActive || hasActiveSubItem) ? 500 : 400,
+                fontFamily: '"Inter", sans-serif',
+                color: (isActive || hasActiveSubItem) ? iCatalystColors.iCatalystBlue : iCatalystColors.darkNavy,
               }}
               secondaryTypographyProps={{
                 fontSize: '0.75rem',
-                color: 'text.secondary',
+                color: iCatalystColors.slateGray,
+                fontFamily: '"Inter", sans-serif',
               }}
             />
             {item.badge && (
@@ -261,13 +270,33 @@ export default function AppLayout({ children, title = 'Smart Home CRM' }: AppLay
 
   const drawer = (
     <Box sx={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
-      {/* Logo/Brand */}
-      <Box sx={{ p: 3, borderBottom: `1px solid ${theme.palette.divider}` }}>
-        <Typography variant="h5" fontWeight="bold" color="primary">
-          Smart Home CRM
+      {/* iCatalyst Brand Header */}
+      <Box sx={{ 
+        p: 3, 
+        borderBottom: `1px solid ${iCatalystColors.lightGray}`,
+        background: `linear-gradient(135deg, ${iCatalystColors.iCatalystBlue} 0%, ${iCatalystColors.darkBlue} 100%)`,
+        color: iCatalystColors.pureWhite
+      }}>
+        <Typography 
+          variant="h5" 
+          fontWeight="600" 
+          sx={{ 
+            fontFamily: '"Inter", sans-serif',
+            fontSize: '1.5rem',
+            marginBottom: '4px'
+          }}
+        >
+          iCatalyst CRM
         </Typography>
-        <Typography variant="body2" color="text.secondary">
-          Customer Relationship Management
+        <Typography 
+          variant="body2" 
+          sx={{ 
+            color: 'rgba(255, 255, 255, 0.8)',
+            fontFamily: '"Inter", sans-serif',
+            fontSize: '0.875rem'
+          }}
+        >
+          Smart Home Solutions Platform
         </Typography>
       </Box>
 

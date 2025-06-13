@@ -43,11 +43,18 @@ import {
   Download as DownloadIcon,
   Share as ShareIcon,
   ArrowBack as ArrowBackIcon,
+  Link as LinkIcon,
+  Visibility as VisibilityIcon,
+  ContentCopy as CopyIcon,
+  Schedule as ScheduleIcon,
+  AutoAwesome as AutoAwesomeIcon,
+  CheckCircle as CheckIcon,
 } from '@mui/icons-material';
 import NextLink from 'next/link';
 import { useRouter } from 'next/router';
 import { useApi } from '../../hooks/useApi';
 import { getApiUrl } from '../../lib/api';
+import PortalLinkGenerator from '../../components/PortalLinkGenerator';
 
 // TypeScript interfaces
 interface ProposalPersona {
@@ -119,9 +126,17 @@ interface Proposal {
   totalAmount: number;
   validUntil?: string;
   voiceTranscript?: string;
+  aiSummary?: string; // JSON string with AI-generated content
   createdAt: string;
   updatedAt: string;
   createdBy: string;
+  
+  // Portal functionality
+  portalToken?: string;
+  portalExpiresAt?: string;
+  portalViewCount?: number;
+  portalLastViewed?: string;
+  clientStatus?: string;
   
   // Customer vs Prospect fields
   isExistingCustomer: boolean;
@@ -158,6 +173,9 @@ export default function ProposalDetailPage() {
   const [success, setSuccess] = useState<string | null>(null);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [deleting, setDeleting] = useState(false);
+  const [shareDialogOpen, setShareDialogOpen] = useState(false);
+  const [exporting, setExporting] = useState(false);
+  const [portalLinkGeneratorOpen, setPortalLinkGeneratorOpen] = useState(false);
 
   // API hooks
   const { get: fetchProposal } = useApi<Proposal>({
@@ -232,6 +250,153 @@ export default function ProposalDetailPage() {
     console.log('Update status to:', newStatus);
   };
 
+  const handleShare = () => {
+    setShareDialogOpen(true);
+  };
+
+  const handleCopyLink = async () => {
+    if (!proposal) return;
+    
+    try {
+      const proposalUrl = `${window.location.origin}/proposals/${proposal.id}`;
+      await navigator.clipboard.writeText(proposalUrl);
+      setSuccess('Proposal link copied to clipboard!');
+      setShareDialogOpen(false);
+    } catch (error) {
+      setError('Failed to copy link to clipboard');
+    }
+  };
+
+  const handleExportPDF = async () => {
+    if (!proposal) return;
+    
+    setExporting(true);
+    try {
+      // Basic PDF export functionality
+      // In a real implementation, you'd use a library like jsPDF or call a backend service
+      const pdfContent = generatePDFContent(proposal, totals);
+      
+      // Create a blob and download link
+      const blob = new Blob([pdfContent], { type: 'text/plain' });
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `proposal-${proposal.name.replace(/\s+/g, '-').toLowerCase()}.txt`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(url);
+      
+      setSuccess('Proposal exported successfully!');
+    } catch (error) {
+      setError('Failed to export proposal');
+    } finally {
+      setExporting(false);
+    }
+  };
+
+  const generatePDFContent = (proposal: Proposal, totals: any): string => {
+    const customerInfo = proposal.isExistingCustomer && proposal.customer
+      ? `${proposal.customer.firstName} ${proposal.customer.lastName}${proposal.customer.company ? ` (${proposal.customer.company})` : ''}`
+      : `${proposal.prospectName || 'Unknown Prospect'}${proposal.prospectCompany ? ` (${proposal.prospectCompany})` : ''}`;
+
+    return `
+SMART HOME PROPOSAL
+==================
+
+Proposal: ${proposal.name}
+Customer: ${customerInfo}
+Date: ${new Date(proposal.createdAt).toLocaleDateString()}
+Status: ${proposal.status.toUpperCase()}
+
+Description:
+${proposal.description || 'No description provided.'}
+
+${proposal.voiceTranscript ? `Voice Notes: "${proposal.voiceTranscript}"` : ''}
+
+PROPOSAL ITEMS
+==============
+${proposal.items.map((item, index) => `
+${index + 1}. ${item.name}
+   Category: ${item.category}
+   Quantity: ${item.quantity}
+   Unit Price: $${item.unitPrice.toFixed(2)}
+   Total: $${item.totalPrice.toFixed(2)}
+   ${item.description ? `Description: ${item.description}` : ''}
+`).join('')}
+
+PRICING SUMMARY
+===============
+Subtotal: $${totals.subtotal.toFixed(2)}
+Tax (8%): $${totals.tax.toFixed(2)}
+TOTAL: $${totals.total.toFixed(2)}
+
+${proposal.validUntil ? `Valid Until: ${new Date(proposal.validUntil).toLocaleDateString()}` : ''}
+
+---
+Generated on ${new Date().toLocaleString()}
+Smart Home CRM System
+    `;
+  };
+
+  // Portal functionality handlers
+  const handleGeneratePortalLink = () => {
+    setPortalLinkGeneratorOpen(true);
+  };
+
+  const handlePortalLinkGenerated = (portalUrl: string) => {
+    setSuccess('Portal link generated successfully! You can now share this secure link with your client.');
+    // Optionally refresh the proposal data to show updated portal status
+    if (proposal) {
+      fetchProposal(getApiUrl(`/api/proposals/${proposal.id}`));
+    }
+  };
+
+  const handleCopyPortalLink = async () => {
+    if (!proposal?.portalToken) return;
+    
+    try {
+      const baseUrl = process.env.NEXT_PUBLIC_APP_URL || window.location.origin;
+      const portalUrl = `${baseUrl}/portal/${proposal.portalToken}`;
+      await navigator.clipboard.writeText(portalUrl);
+      setSuccess('Portal link copied to clipboard!');
+    } catch (error) {
+      setError('Failed to copy portal link to clipboard');
+    }
+  };
+
+  const getClientName = () => {
+    if (!proposal) return 'Unknown Client';
+    
+    if (proposal.isExistingCustomer && proposal.customer) {
+      return `${proposal.customer.firstName} ${proposal.customer.lastName}`;
+    }
+    return proposal.prospectName || 'Unknown Client';
+  };
+
+  const getClientEmail = () => {
+    if (!proposal) return '';
+    
+    if (proposal.isExistingCustomer && proposal.customer) {
+      return proposal.customer.email;
+    }
+    return proposal.prospectEmail || '';
+  };
+
+  // Parse AI summary data
+  const parseAISummary = () => {
+    if (!proposal?.aiSummary) return null;
+    
+    try {
+      return JSON.parse(proposal.aiSummary);
+    } catch (error) {
+      console.error('Error parsing AI summary:', error);
+      return null;
+    }
+  };
+
+  const aiSummaryData = parseAISummary();
+
   if (loading) {
     return (
       <Container maxWidth="lg">
@@ -298,25 +463,50 @@ export default function ProposalDetailPage() {
             </Button>
             <Button
               startIcon={<EditIcon />}
-              onClick={() => router.push(`/proposals/${proposal.id}/edit`)}
+              onClick={() => router.push(`/proposals/edit/${proposal.id}`)}
               variant="outlined"
               color="primary"
             >
               Edit
             </Button>
+            
+            {/* Portal Link Button */}
+            {proposal.portalToken ? (
+              <Button
+                startIcon={<CopyIcon />}
+                onClick={handleCopyPortalLink}
+                variant="contained"
+                color="success"
+              >
+                Copy Portal Link
+              </Button>
+            ) : (
+              <Button
+                startIcon={<LinkIcon />}
+                onClick={handleGeneratePortalLink}
+                variant="contained"
+                color="primary"
+              >
+                Generate Portal Link
+              </Button>
+            )}
+            
             <Button
               startIcon={<ShareIcon />}
+              onClick={handleShare}
               variant="outlined"
               color="primary"
             >
               Share
             </Button>
             <Button
-              startIcon={<DownloadIcon />}
+              startIcon={exporting ? <CircularProgress size={16} /> : <DownloadIcon />}
+              onClick={handleExportPDF}
               variant="outlined"
               color="primary"
+              disabled={exporting}
             >
-              Export PDF
+              {exporting ? 'Exporting...' : 'Export PDF'}
             </Button>
             <IconButton
               color="error"
@@ -355,6 +545,74 @@ export default function ProposalDetailPage() {
               </Box>
             )}
           </Paper>
+
+          {/* AI-Generated Summary */}
+          {aiSummaryData && (
+            <Paper sx={{ p: 3, mb: 3 }}>
+              <Box display="flex" alignItems="center" sx={{ mb: 2 }}>
+                <AutoAwesomeIcon sx={{ mr: 1, color: 'primary.main' }} />
+                <Typography variant="h6" color="primary">AI-Enhanced Proposal Summary</Typography>
+                <Chip 
+                  label="AI Generated" 
+                  size="small" 
+                  color="primary" 
+                  variant="outlined" 
+                  sx={{ ml: 1 }}
+                />
+              </Box>
+              
+              {aiSummaryData.executiveSummary && (
+                <Box sx={{ mb: 3 }}>
+                  <Typography variant="subtitle1" fontWeight="medium" sx={{ mb: 1 }}>
+                    Executive Summary
+                  </Typography>
+                  <Typography variant="body1" sx={{ mb: 2 }}>
+                    {aiSummaryData.executiveSummary}
+                  </Typography>
+                </Box>
+              )}
+
+              {aiSummaryData.keyBenefits && aiSummaryData.keyBenefits.length > 0 && (
+                <Box sx={{ mb: 3 }}>
+                  <Typography variant="subtitle1" fontWeight="medium" sx={{ mb: 1 }}>
+                    Key Benefits
+                  </Typography>
+                  <Box sx={{ mb: 2 }}>
+                    {aiSummaryData.keyBenefits.map((benefit: string, index: number) => (
+                      <Box key={index} display="flex" alignItems="flex-start" sx={{ mb: 1 }}>
+                        <CheckIcon sx={{ color: 'success.main', fontSize: 16, mr: 1, mt: 0.25 }} />
+                        <Typography variant="body2">{benefit}</Typography>
+                      </Box>
+                    ))}
+                  </Box>
+                </Box>
+              )}
+
+              {aiSummaryData.callToAction && (
+                <Box sx={{ mb: 2 }}>
+                  <Typography variant="subtitle1" fontWeight="medium" sx={{ mb: 1 }}>
+                    Next Steps
+                  </Typography>
+                  <Typography variant="body1" sx={{ mb: 2 }}>
+                    {aiSummaryData.callToAction}
+                  </Typography>
+                </Box>
+              )}
+
+              {aiSummaryData.aiMetadata && (
+                <Box sx={{ mt: 2, pt: 2, borderTop: '1px solid', borderColor: 'divider' }}>
+                  <Typography variant="caption" color="text.secondary">
+                    AI-generated for {aiSummaryData.aiMetadata.persona} persona • 
+                    {aiSummaryData.aiMetadata.projectType} project • 
+                    Generated on {new Date(aiSummaryData.aiMetadata.generatedAt).toLocaleDateString()}
+                    {aiSummaryData.aiMetadata.tokensUsed && (
+                      <> • {aiSummaryData.aiMetadata.tokensUsed} tokens</>
+                    )}
+                  </Typography>
+                </Box>
+              )}
+            </Paper>
+          )}
 
           {/* Proposal Items */}
           <Paper sx={{ p: 3 }}>
@@ -560,6 +818,109 @@ export default function ProposalDetailPage() {
             )}
           </Paper>
 
+          {/* Portal Status */}
+          <Paper sx={{ p: 3, mb: 3 }}>
+            <Box display="flex" alignItems="center" sx={{ mb: 2 }}>
+              <LinkIcon sx={{ mr: 1 }} />
+              <Typography variant="h6">Customer Portal</Typography>
+            </Box>
+            
+            {proposal.portalToken ? (
+              <>
+                <Box sx={{ mb: 2 }}>
+                  <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
+                    Portal Status:
+                  </Typography>
+                  <Chip
+                    label="ACTIVE"
+                    color="success"
+                    size="small"
+                    sx={{ mb: 1 }}
+                  />
+                </Box>
+
+                {proposal.portalExpiresAt && (
+                  <Box display="flex" alignItems="center" sx={{ mb: 1 }}>
+                    <ScheduleIcon sx={{ mr: 1, fontSize: 16 }} />
+                    <Typography variant="body2">
+                      Expires: {new Date(proposal.portalExpiresAt).toLocaleDateString()}
+                    </Typography>
+                  </Box>
+                )}
+
+                {proposal.portalViewCount !== undefined && (
+                  <Box display="flex" alignItems="center" sx={{ mb: 1 }}>
+                    <VisibilityIcon sx={{ mr: 1, fontSize: 16 }} />
+                    <Typography variant="body2">
+                      Views: {proposal.portalViewCount}
+                    </Typography>
+                  </Box>
+                )}
+
+                {proposal.portalLastViewed && (
+                  <Box sx={{ mb: 2 }}>
+                    <Typography variant="caption" color="text.secondary">
+                      Last viewed: {new Date(proposal.portalLastViewed).toLocaleString()}
+                    </Typography>
+                  </Box>
+                )}
+
+                {proposal.clientStatus && (
+                  <Box sx={{ mb: 2 }}>
+                    <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
+                      Client Decision:
+                    </Typography>
+                    <Chip
+                      label={proposal.clientStatus.toUpperCase().replace('-', ' ')}
+                      color={
+                        proposal.clientStatus === 'approved' ? 'success' :
+                        proposal.clientStatus === 'rejected' ? 'error' :
+                        proposal.clientStatus === 'changes-requested' ? 'warning' : 'default'
+                      }
+                      size="small"
+                    />
+                  </Box>
+                )}
+
+                <Box display="flex" gap={1} flexDirection="column">
+                  <Button
+                    startIcon={<CopyIcon />}
+                    onClick={handleCopyPortalLink}
+                    variant="outlined"
+                    size="small"
+                    fullWidth
+                  >
+                    Copy Portal Link
+                  </Button>
+                  <Button
+                    startIcon={<VisibilityIcon />}
+                    onClick={() => window.open(`/portal/${proposal.portalToken}`, '_blank')}
+                    variant="outlined"
+                    size="small"
+                    fullWidth
+                  >
+                    View Portal
+                  </Button>
+                </Box>
+              </>
+            ) : (
+              <>
+                <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+                  No portal link generated yet. Create a secure link for your client to review and approve this proposal.
+                </Typography>
+                <Button
+                  startIcon={<LinkIcon />}
+                  onClick={handleGeneratePortalLink}
+                  variant="contained"
+                  color="primary"
+                  fullWidth
+                >
+                  Generate Portal Link
+                </Button>
+              </>
+            )}
+          </Paper>
+
           {/* Property Information */}
           {proposal.property && (
             <Paper sx={{ p: 3, mb: 3 }}>
@@ -663,6 +1024,45 @@ export default function ProposalDetailPage() {
         </Grid>
       </Grid>
 
+      {/* Share Dialog */}
+      <Dialog
+        open={shareDialogOpen}
+        onClose={() => setShareDialogOpen(false)}
+        maxWidth="sm"
+        fullWidth
+      >
+        <DialogTitle>Share Proposal</DialogTitle>
+        <DialogContent>
+          <Typography variant="body1" sx={{ mb: 2 }}>
+            Share this proposal with others by copying the link below:
+          </Typography>
+          <Box
+            sx={{
+              p: 2,
+              bgcolor: 'grey.100',
+              borderRadius: 1,
+              border: '1px solid',
+              borderColor: 'grey.300',
+              wordBreak: 'break-all',
+              fontSize: '0.875rem',
+              fontFamily: 'monospace'
+            }}
+          >
+            {typeof window !== 'undefined' ? `${window.location.origin}/proposals/${proposal?.id}` : ''}
+          </Box>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setShareDialogOpen(false)}>Cancel</Button>
+          <Button
+            onClick={handleCopyLink}
+            variant="contained"
+            color="primary"
+          >
+            Copy Link
+          </Button>
+        </DialogActions>
+      </Dialog>
+
       {/* Delete Confirmation Dialog */}
       <Dialog
         open={deleteDialogOpen}
@@ -712,6 +1112,18 @@ export default function ProposalDetailPage() {
           {success}
         </Alert>
       </Snackbar>
+
+      {/* Portal Link Generator Dialog */}
+      {portalLinkGeneratorOpen && (
+        <PortalLinkGenerator
+          proposalId={proposal.id}
+          proposalName={proposal.name}
+          clientName={getClientName()}
+          clientEmail={getClientEmail()}
+          onClose={() => setPortalLinkGeneratorOpen(false)}
+          onGenerated={handlePortalLinkGenerated}
+        />
+      )}
     </Container>
   );
 } 

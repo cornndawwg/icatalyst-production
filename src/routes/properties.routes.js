@@ -1,8 +1,6 @@
 const express = require('express');
 const router = express.Router();
-const { PrismaClient } = require('../../generated/prisma');
-
-const prisma = new PrismaClient();
+const prisma = require('../utils/prisma');
 
 // GET /api/properties - List all properties with search/filter
 // GET /api/properties/:id - Get specific property
@@ -105,6 +103,155 @@ router.get('/:id', async (req, res) => {
       error: 'Failed to fetch property',
       details: error.message 
     });
+  }
+});
+
+// POST /api/properties - Create new property
+router.post('/', async (req, res) => {
+  try {
+    const {
+      name,
+      type,
+      squareFootage,
+      bedrooms,
+      bathrooms,
+      yearBuilt,
+      customerId,
+      address
+    } = req.body;
+
+    // Create address first if provided
+    let addressRecord = null;
+    if (address) {
+      addressRecord = await prisma.address.create({
+        data: address
+      });
+    }
+
+    const property = await prisma.property.create({
+      data: {
+        name,
+        type,
+        squareFootage: parseFloat(squareFootage),
+        bedrooms: bedrooms ? parseInt(bedrooms) : null,
+        bathrooms: bathrooms ? parseInt(bathrooms) : null,
+        yearBuilt: yearBuilt ? parseInt(yearBuilt) : null,
+        customerId,
+        addressId: addressRecord?.id || null
+      },
+      include: {
+        customer: true,
+        address: true,
+        systems: true,
+        serviceHistory: true,
+        projects: true,
+        proposals: true
+      }
+    });
+
+    res.status(201).json(property);
+  } catch (error) {
+    console.error('Error creating property:', error);
+    res.status(500).json({ error: 'Failed to create property' });
+  }
+});
+
+// PUT /api/properties/:id - Update property
+router.put('/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const {
+      name,
+      type,
+      squareFootage,
+      bedrooms,
+      bathrooms,
+      yearBuilt,
+      address
+    } = req.body;
+
+    // Update address if provided
+    const property = await prisma.property.findUnique({
+      where: { id },
+      include: { address: true }
+    });
+
+    if (!property) {
+      return res.status(404).json({ error: 'Property not found' });
+    }
+
+    let addressId = property.addressId;
+    if (address) {
+      if (property.address) {
+        // Update existing address
+        await prisma.address.update({
+          where: { id: property.addressId },
+          data: address
+        });
+      } else {
+        // Create new address
+        const addressRecord = await prisma.address.create({
+          data: address
+        });
+        addressId = addressRecord.id;
+      }
+    }
+
+    const updatedProperty = await prisma.property.update({
+      where: { id },
+      data: {
+        name,
+        type,
+        squareFootage: squareFootage ? parseFloat(squareFootage) : undefined,
+        bedrooms: bedrooms ? parseInt(bedrooms) : undefined,
+        bathrooms: bathrooms ? parseInt(bathrooms) : undefined,
+        yearBuilt: yearBuilt ? parseInt(yearBuilt) : undefined,
+        addressId
+      },
+      include: {
+        customer: true,
+        address: true,
+        systems: true,
+        serviceHistory: true,
+        projects: true,
+        proposals: {
+          include: {
+            items: true
+          }
+        }
+      }
+    });
+
+    res.json(updatedProperty);
+  } catch (error) {
+    console.error('Error updating property:', error);
+    res.status(500).json({ error: 'Failed to update property' });
+  }
+});
+
+// DELETE /api/properties/:id - Delete property
+router.delete('/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    // Check if property exists
+    const property = await prisma.property.findUnique({
+      where: { id }
+    });
+
+    if (!property) {
+      return res.status(404).json({ error: 'Property not found' });
+    }
+
+    // Delete property (cascade will handle related records)
+    await prisma.property.delete({
+      where: { id }
+    });
+
+    res.json({ message: 'Property deleted successfully' });
+  } catch (error) {
+    console.error('Error deleting property:', error);
+    res.status(500).json({ error: 'Failed to delete property' });
   }
 });
 

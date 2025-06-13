@@ -10,7 +10,7 @@ exports.register = async (req, res, next) => {
     logger.info('=== Starting Registration Process ===');
     logger.debug('Registration request body:', {
       ...req.body,
-      password: '[REDACTED]' // Don't log the actual password
+      password: '[REDACTED]'
     });
 
     // Validate request
@@ -33,7 +33,7 @@ exports.register = async (req, res, next) => {
 
     const { fullName, email, role, phone, password } = req.body;
 
-    // Log the attempt to check for existing user
+    // Check for existing user
     logger.debug('Checking for existing user:', { email });
     try {
       const existingUser = await User.findByEmail(email);
@@ -49,7 +49,6 @@ exports.register = async (req, res, next) => {
       logger.error('Error checking for existing user:', {
         error: dbError.message,
         stack: dbError.stack,
-        query: dbError.query,
         email
       });
       throw dbError;
@@ -69,7 +68,7 @@ exports.register = async (req, res, next) => {
       throw hashError;
     }
 
-    // Create user
+    // Create user with hashed password
     logger.debug('Attempting to create new user:', { 
       email, 
       fullName, 
@@ -83,8 +82,9 @@ exports.register = async (req, res, next) => {
         email,
         role,
         phone,
-        password: hashedPassword // Use the hashed password
+        password: hashedPassword
       });
+
       logger.info('User created successfully:', { 
         userId: user.id, 
         email,
@@ -103,7 +103,7 @@ exports.register = async (req, res, next) => {
       // Send welcome email
       try {
         logger.debug('Attempting to send welcome email...');
-        await sendWelcomeEmail(user.email, user.full_name);
+        await sendWelcomeEmail(user.email, user.fullName);
         logger.info('Welcome email sent successfully to:', user.email);
       } catch (emailError) {
         logger.error('Failed to send welcome email:', {
@@ -127,7 +127,7 @@ exports.register = async (req, res, next) => {
         data: {
           user: {
             id: user.id,
-            fullName: user.full_name,
+            fullName: user.fullName,
             email: user.email,
             role: user.role,
             phone: user.phone
@@ -138,10 +138,7 @@ exports.register = async (req, res, next) => {
     } catch (dbError) {
       logger.error('Database error during user creation:', {
         error: dbError.message,
-        stack: dbError.stack,
-        query: dbError.query,
-        parameters: dbError.parameters,
-        sqliteError: dbError.code // SQLite specific error code
+        stack: dbError.stack
       });
       throw dbError;
     }
@@ -149,8 +146,6 @@ exports.register = async (req, res, next) => {
     logger.error('Registration process failed:', {
       error: error.message,
       stack: error.stack,
-      code: error.code,
-      sqlMessage: error.sqlMessage,
       requestBody: {
         ...req.body,
         password: '[REDACTED]'
@@ -197,17 +192,16 @@ exports.login = async (req, res, next) => {
     // Generate JWT token
     const token = jwt.sign(
       { userId: user.id, role: user.role },
-      process.env.JWT_SECRET,
-      { expiresIn: process.env.JWT_EXPIRES_IN }
+      process.env.JWT_SECRET || 'default-secret-key',
+      { expiresIn: process.env.JWT_EXPIRES_IN || '24h' }
     );
 
-    // Return success response
     res.json({
       status: 'success',
       data: {
         user: {
           id: user.id,
-          fullName: user.full_name,
+          fullName: user.fullName,
           email: user.email,
           role: user.role,
           phone: user.phone
@@ -216,6 +210,11 @@ exports.login = async (req, res, next) => {
       }
     });
   } catch (error) {
+    logger.error('Login failed:', {
+      error: error.message,
+      stack: error.stack,
+      email: req.body.email
+    });
     next(error);
   }
 }; 

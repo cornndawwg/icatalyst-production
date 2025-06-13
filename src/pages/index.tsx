@@ -48,38 +48,23 @@ export default function HomePage() {
   const [stats, setStats] = useState<DashboardStats | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [debugInfo, setDebugInfo] = useState<string>('');
-
   const fetchStats = async () => {
     setLoading(true);
     setError(null);
-    setDebugInfo('Starting API call...');
 
     try {
       const url = getApiUrl('/api/customers?summary=true');
-      setDebugInfo(`Calling URL: ${url}`);
-      console.log('🎯 Dashboard calling API URL:', url);
-      
       const response = await fetch(url);
-      
-      setDebugInfo(`Response received: ${response.status}`);
-      console.log('📥 Response status:', response.status);
-      console.log('📥 Response headers:', Object.fromEntries(response.headers.entries()));
 
       if (!response.ok) {
-        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+        throw new Error(`Failed to load dashboard data`);
       }
 
       const data = await response.json();
-      setDebugInfo(`Data received: ${JSON.stringify(data)}`);
-      console.log('✅ Dashboard data loaded successfully:', data);
-      
       setStats(data);
       setError(null);
     } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : 'Unknown error';
-      setDebugInfo(`Error: ${errorMessage}`);
-      console.error('❌ Dashboard failed to load:', err);
+      const errorMessage = err instanceof Error ? err.message : 'Unable to load dashboard data';
       setError(errorMessage);
     } finally {
       setLoading(false);
@@ -155,39 +140,18 @@ export default function HomePage() {
           >
             Refresh
           </Button>
-          <Button
-            variant="text"
-            onClick={() => router.push('/debug')}
-            size="small"
-          >
-            Debug Console
-          </Button>
         </Box>
       </Box>
 
-      {/* API Connection Status */}
-      <Paper sx={{ p: 2, mb: 4, bgcolor: stats ? 'success.main' : error ? 'error.main' : 'info.main', color: 'white' }}>
-        <Typography variant="h6" gutterBottom>
-          🔧 API Connection Status
-        </Typography>
-        <Typography variant="body2">
-          URL: {getApiUrl('/api/customers?summary=true')}
-        </Typography>
-        <Typography variant="body2">
-          Status: {loading ? 'Loading...' : error ? `❌ Error: ${error}` : stats ? '✅ Connected Successfully' : '⏳ Not loaded yet'}
-        </Typography>
-        <Typography variant="body2">
-          Debug: {debugInfo}
-        </Typography>
-      </Paper>
+
 
       {error && (
         <Alert severity="error" sx={{ mb: 4 }}>
-          <Typography variant="h6">API Connection Failed</Typography>
+          <Typography variant="h6">Unable to Load Dashboard Data</Typography>
           <Typography>{error}</Typography>
-          <Button variant="outlined" color="inherit" onClick={() => router.push('/debug')} sx={{ mt: 1 }}>
-            Open Debug Console
-          </Button>
+          <Typography variant="body2" sx={{ mt: 1 }}>
+            Please try refreshing the page or contact support if the issue persists.
+          </Typography>
         </Alert>
       )}
 
@@ -262,15 +226,7 @@ export default function HomePage() {
         </Grid>
       </Grid>
 
-      {/* Success Message when data loads */}
-      {stats && !loading && (
-        <Alert severity="success" sx={{ mb: 4 }}>
-          <Typography variant="h6">🎉 API Data Loaded Successfully!</Typography>
-          <Typography>
-            Showing data for {stats.totalCustomers} customers, {stats.activeCustomers} active
-          </Typography>
-        </Alert>
-      )}
+
 
       {/* Quick Actions and Recent Activity */}
       <Grid container spacing={3}>
@@ -355,7 +311,7 @@ export default function HomePage() {
                 <ListItem>
                   <ListItemText
                     primary={loading ? "Loading customers..." : error ? "Failed to load customers" : "No customer data available"}
-                    secondary={loading ? "Please wait..." : error ? "Check the debug console for details" : "API may not be returning customer list"}
+                    secondary={loading ? "Please wait..." : error ? "Please try refreshing the page" : "Customer data will appear here once available"}
                   />
                 </ListItem>
               )}

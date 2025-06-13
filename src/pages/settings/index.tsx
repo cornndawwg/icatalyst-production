@@ -13,6 +13,11 @@ import {
   TextField,
   Switch,
   FormControlLabel,
+  FormControl,
+  InputLabel,
+  Select,
+  MenuItem,
+  FormHelperText,
   Chip,
   Avatar,
   Divider,
@@ -24,10 +29,13 @@ import {
   Tab,
   Tabs,
   Alert,
+  AlertTitle,
   Dialog,
   DialogTitle,
   DialogContent,
   DialogActions,
+  CircularProgress,
+  IconButton,
 } from '@mui/material';
 import {
   Settings as SettingsIcon,
@@ -46,6 +54,15 @@ import {
   Edit as EditIcon,
   Lock as LockIcon,
   Key as KeyIcon,
+  MailOutline as MailOutlineIcon,
+  Google as GoogleIcon,
+  Microsoft as MicrosoftIcon,
+  CheckCircle as CheckCircleIcon,
+  Error as ErrorIcon,
+  Visibility as VisibilityIcon,
+  VisibilityOff as VisibilityOffIcon,
+  Send as SendIcon,
+  Refresh as RefreshIcon,
 } from '@mui/icons-material';
 import NextLink from 'next/link';
 
@@ -103,6 +120,35 @@ export default function SettingsPage() {
     sessionTimeout: 30,
     passwordExpiry: 90,
   });
+
+  // SMTP Configuration State
+  const [smtpConfig, setSmtpConfig] = useState({
+    provider: '', // 'gmail', 'microsoft', 'custom'
+    smtpHost: '',
+    smtpPort: 587,
+    smtpUser: '',
+    smtpPassword: '',
+    smtpSecure: true,
+    encryptionType: 'tls', // 'tls', 'ssl', 'none'
+    fromEmail: '',
+    fromName: '',
+    replyToEmail: '',
+    companyName: settings.company,
+    primaryColor: '#1976d2',
+    isConfigured: false,
+    connectionStatus: 'not_tested', // 'not_tested', 'testing', 'success', 'error'
+    lastTested: null as string | null,
+  });
+
+  const [smtpDialogs, setSmtpDialogs] = useState({
+    providerSelection: false,
+    oauthInProgress: false,
+    testEmail: false,
+  });
+
+  const [showPassword, setShowPassword] = useState(false);
+  const [testEmailAddress, setTestEmailAddress] = useState('');
+  const [smtpErrors, setSmtpErrors] = useState<string[]>([]);
   
   const [changePasswordDialog, setChangePasswordDialog] = useState(false);
   const [unsavedChanges, setUnsavedChanges] = useState(false);
@@ -121,6 +167,277 @@ export default function SettingsPage() {
     console.log('Saving settings:', settings);
     setUnsavedChanges(false);
     // Show success message
+  };
+
+  // SMTP Configuration Functions
+  const handleSmtpConfigChange = (field: string, value: any) => {
+    setSmtpConfig(prev => ({ ...prev, [field]: value }));
+    setUnsavedChanges(true);
+  };
+
+  const handleProviderSelect = (provider: string) => {
+    setSmtpErrors([]);
+    
+    if (provider === 'gmail') {
+      setSmtpConfig(prev => ({
+        ...prev,
+        provider: 'gmail',
+        smtpHost: 'smtp.gmail.com',
+        smtpPort: 587,
+        smtpSecure: true,
+      }));
+      handleGmailOAuth();
+    } else if (provider === 'microsoft') {
+      setSmtpConfig(prev => ({
+        ...prev,
+        provider: 'microsoft',
+        smtpHost: 'smtp-mail.outlook.com',
+        smtpPort: 587,
+        smtpSecure: true,
+      }));
+      handleMicrosoftOAuth();
+    } else {
+      setSmtpConfig(prev => ({
+        ...prev,
+        provider: 'custom',
+        smtpHost: '',
+        smtpPort: 587,
+        smtpSecure: true,
+      }));
+    }
+    
+    setSmtpDialogs(prev => ({ ...prev, providerSelection: false }));
+  };
+
+  const handleGmailOAuth = async () => {
+    try {
+      setSmtpDialogs(prev => ({ ...prev, oauthInProgress: true }));
+      setSmtpErrors([]);
+      
+      console.log('🔐 Initiating Gmail OAuth flow...');
+      
+      // Get OAuth URL from backend
+      const response = await fetch('/api/oauth/google/auth');
+      const result = await response.json();
+      
+      if (!result.success) {
+        throw new Error(result.error || 'Failed to initiate OAuth');
+      }
+      
+      // Open OAuth popup
+      const popup = window.open(
+        result.authUrl,
+        'google-oauth',
+        'width=500,height=600,scrollbars=yes,resizable=yes'
+      );
+      
+      // Listen for OAuth completion
+      const handleMessage = (event: MessageEvent) => {
+        if (event.data.type === 'OAUTH_SUCCESS' && event.data.provider === 'google') {
+          const config = event.data.config;
+          
+          setSmtpConfig(prev => ({
+            ...prev,
+            ...config,
+            companyName: settings.company,
+            isConfigured: true,
+            connectionStatus: 'success',
+            lastTested: new Date().toISOString(),
+          }));
+          
+          setSmtpDialogs(prev => ({ ...prev, oauthInProgress: false }));
+          console.log('✅ Gmail OAuth completed successfully');
+          
+          window.removeEventListener('message', handleMessage);
+          if (popup) popup.close();
+        }
+      };
+      
+      window.addEventListener('message', handleMessage);
+      
+      // Handle popup closed manually
+      const checkClosed = setInterval(() => {
+        if (popup?.closed) {
+          clearInterval(checkClosed);
+          setSmtpDialogs(prev => ({ ...prev, oauthInProgress: false }));
+          window.removeEventListener('message', handleMessage);
+        }
+      }, 1000);
+      
+    } catch (error) {
+      console.error('❌ Gmail OAuth failed:', error);
+      setSmtpErrors(['Gmail OAuth authentication failed. Please try again.']);
+      setSmtpDialogs(prev => ({ ...prev, oauthInProgress: false }));
+    }
+  };
+
+  const handleMicrosoftOAuth = async () => {
+    try {
+      setSmtpDialogs(prev => ({ ...prev, oauthInProgress: true }));
+      setSmtpErrors([]);
+      
+      console.log('🔐 Initiating Microsoft OAuth flow...');
+      
+      // Get OAuth URL from backend
+      const response = await fetch('/api/oauth/microsoft/auth');
+      const result = await response.json();
+      
+      if (!result.success) {
+        throw new Error(result.error || 'Failed to initiate OAuth');
+      }
+      
+      // Open OAuth popup
+      const popup = window.open(
+        result.authUrl,
+        'microsoft-oauth',
+        'width=500,height=600,scrollbars=yes,resizable=yes'
+      );
+      
+      // Listen for OAuth completion
+      const handleMessage = (event: MessageEvent) => {
+        if (event.data.type === 'OAUTH_SUCCESS' && event.data.provider === 'microsoft') {
+          const config = event.data.config;
+          
+          setSmtpConfig(prev => ({
+            ...prev,
+            ...config,
+            companyName: settings.company,
+            isConfigured: true,
+            connectionStatus: 'success',
+            lastTested: new Date().toISOString(),
+          }));
+          
+          setSmtpDialogs(prev => ({ ...prev, oauthInProgress: false }));
+          console.log('✅ Microsoft OAuth completed successfully');
+          
+          window.removeEventListener('message', handleMessage);
+          if (popup) popup.close();
+        }
+      };
+      
+      window.addEventListener('message', handleMessage);
+      
+      // Handle popup closed manually
+      const checkClosed = setInterval(() => {
+        if (popup?.closed) {
+          clearInterval(checkClosed);
+          setSmtpDialogs(prev => ({ ...prev, oauthInProgress: false }));
+          window.removeEventListener('message', handleMessage);
+        }
+      }, 1000);
+      
+    } catch (error) {
+      console.error('❌ Microsoft OAuth failed:', error);
+      setSmtpErrors(['Microsoft OAuth authentication failed. Please try again.']);
+      setSmtpDialogs(prev => ({ ...prev, oauthInProgress: false }));
+    }
+  };
+
+  const handleTestSmtpConnection = async () => {
+    try {
+      setSmtpConfig(prev => ({ ...prev, connectionStatus: 'testing' }));
+      setSmtpErrors([]);
+
+      // Validate configuration
+      const errors = [];
+      if (!smtpConfig.smtpHost) errors.push('SMTP Host is required');
+      if (!smtpConfig.smtpUser) errors.push('SMTP Username is required');
+      if (!smtpConfig.smtpPassword && smtpConfig.provider === 'custom') errors.push('SMTP Password is required');
+      if (!smtpConfig.fromEmail) errors.push('From Email is required');
+
+      if (errors.length > 0) {
+        setSmtpErrors(errors);
+        setSmtpConfig(prev => ({ ...prev, connectionStatus: 'error' }));
+        return;
+      }
+
+      // Test SMTP connection via API
+      const response = await fetch('/api/email/test-config', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ config: smtpConfig }),
+      });
+
+      const result = await response.json();
+
+      if (result.success) {
+        setSmtpConfig(prev => ({
+          ...prev,
+          connectionStatus: 'success',
+          lastTested: new Date().toISOString(),
+          isConfigured: true,
+        }));
+        console.log('✅ SMTP connection test successful');
+      } else {
+        setSmtpConfig(prev => ({ ...prev, connectionStatus: 'error' }));
+        setSmtpErrors([result.error || 'SMTP connection test failed']);
+        console.error('❌ SMTP connection test failed:', result.error);
+      }
+
+    } catch (error) {
+      console.error('❌ SMTP connection test error:', error);
+      setSmtpConfig(prev => ({ ...prev, connectionStatus: 'error' }));
+      setSmtpErrors(['Failed to test SMTP connection. Please check your settings.']);
+    }
+  };
+
+  const handleSendTestEmail = async () => {
+    try {
+      if (!testEmailAddress) {
+        setSmtpErrors(['Test email address is required']);
+        return;
+      }
+
+      const response = await fetch('/api/email/send-test', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          config: smtpConfig,
+          testEmail: testEmailAddress,
+        }),
+      });
+
+      const result = await response.json();
+
+      if (result.success) {
+        console.log('✅ Test email sent successfully');
+        setSmtpDialogs(prev => ({ ...prev, testEmail: false }));
+        setTestEmailAddress('');
+      } else {
+        setSmtpErrors([result.error || 'Failed to send test email']);
+        console.error('❌ Test email failed:', result.error);
+      }
+
+    } catch (error) {
+      console.error('❌ Test email error:', error);
+      setSmtpErrors(['Failed to send test email. Please try again.']);
+    }
+  };
+
+  const getConnectionStatusIcon = () => {
+    switch (smtpConfig.connectionStatus) {
+      case 'success':
+        return <CheckCircleIcon color="success" />;
+      case 'error':
+        return <ErrorIcon color="error" />;
+      case 'testing':
+        return <RefreshIcon className="animate-spin" />;
+      default:
+        return <MailOutlineIcon color="disabled" />;
+    }
+  };
+
+  const getConnectionStatusText = () => {
+    switch (smtpConfig.connectionStatus) {
+      case 'success':
+        return `Connected successfully${smtpConfig.lastTested ? ` (${new Date(smtpConfig.lastTested).toLocaleString()})` : ''}`;
+      case 'error':
+        return 'Connection failed';
+      case 'testing':
+        return 'Testing connection...';
+      default:
+        return 'Not tested';
+    }
   };
 
   return (
@@ -168,6 +485,7 @@ export default function SettingsPage() {
           <Tabs value={tabValue} onChange={handleTabChange} aria-label="settings tabs">
             <Tab icon={<PersonIcon />} label="Profile" />
             <Tab icon={<NotificationsIcon />} label="Notifications" />
+            <Tab icon={<MailOutlineIcon />} label="Email Setup" />
             <Tab icon={<SecurityIcon />} label="Security" />
             <Tab icon={<PaletteIcon />} label="Preferences" />
             <Tab icon={<BusinessIcon />} label="Company" />
@@ -353,8 +671,384 @@ export default function SettingsPage() {
           </List>
         </TabPanel>
 
-        {/* Security Settings */}
+        {/* Email Setup */}
         <TabPanel value={tabValue} index={2}>
+          <Box sx={{ mb: 4 }}>
+            <Typography variant="h5" gutterBottom>
+              Email Configuration
+            </Typography>
+            <Typography variant="body1" color="text.secondary" sx={{ mb: 3 }}>
+              Configure your SMTP settings to send professional emails from your own email server.
+            </Typography>
+
+            {/* Connection Status */}
+            {smtpConfig.isConfigured && (
+              <Alert 
+                severity={smtpConfig.connectionStatus === 'success' ? 'success' : 'warning'} 
+                sx={{ mb: 3 }}
+                icon={getConnectionStatusIcon()}
+              >
+                <Typography variant="subtitle2">
+                  {getConnectionStatusText()}
+                </Typography>
+                {smtpConfig.fromEmail && (
+                  <Typography variant="body2">
+                    Sending emails from: {smtpConfig.fromEmail}
+                  </Typography>
+                )}
+              </Alert>
+            )}
+
+            {/* Error Messages */}
+            {smtpErrors.length > 0 && (
+              <Alert severity="error" sx={{ mb: 3 }}>
+                <Typography variant="subtitle2">Configuration Errors:</Typography>
+                <ul style={{ margin: '8px 0', paddingLeft: '20px' }}>
+                  {smtpErrors.map((error, index) => (
+                    <li key={index}>{error}</li>
+                  ))}
+                </ul>
+              </Alert>
+            )}
+
+            {/* Provider Selection */}
+            {!smtpConfig.isConfigured && (
+              <Grid container spacing={3} sx={{ mb: 4 }}>
+                <Grid item xs={12}>
+                  <Typography variant="h6" gutterBottom>
+                    Choose Your Email Provider
+                  </Typography>
+                  <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+                    Select your email provider for automatic configuration or choose custom SMTP.
+                  </Typography>
+                </Grid>
+
+                {/* Gmail OAuth */}
+                <Grid item xs={12} md={4}>
+                  <Card 
+                    sx={{ 
+                      cursor: 'pointer',
+                      '&:hover': { elevation: 4 },
+                      border: smtpConfig.provider === 'gmail' ? '2px solid #1976d2' : '1px solid #e0e0e0'
+                    }}
+                    onClick={() => handleProviderSelect('gmail')}
+                  >
+                    <CardContent sx={{ textAlign: 'center', py: 3 }}>
+                      <GoogleIcon sx={{ fontSize: 48, color: '#4285f4', mb: 2 }} />
+                      <Typography variant="h6" gutterBottom>
+                        Gmail / Google Workspace
+                      </Typography>
+                      <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+                        One-click setup with OAuth authentication
+                      </Typography>
+                      <Chip label="Recommended" color="primary" size="small" />
+                    </CardContent>
+                  </Card>
+                </Grid>
+
+                {/* Microsoft OAuth */}
+                <Grid item xs={12} md={4}>
+                  <Card 
+                    sx={{ 
+                      cursor: 'pointer',
+                      '&:hover': { elevation: 4 },
+                      border: smtpConfig.provider === 'microsoft' ? '2px solid #1976d2' : '1px solid #e0e0e0'
+                    }}
+                    onClick={() => handleProviderSelect('microsoft')}
+                  >
+                    <CardContent sx={{ textAlign: 'center', py: 3 }}>
+                      <MicrosoftIcon sx={{ fontSize: 48, color: '#0078d4', mb: 2 }} />
+                      <Typography variant="h6" gutterBottom>
+                        Microsoft 365 / Outlook
+                      </Typography>
+                      <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+                        Automatic setup with Microsoft authentication
+                      </Typography>
+                      <Chip label="Enterprise" color="secondary" size="small" />
+                    </CardContent>
+                  </Card>
+                </Grid>
+
+                {/* Custom SMTP */}
+                <Grid item xs={12} md={4}>
+                  <Card 
+                    sx={{ 
+                      cursor: 'pointer',
+                      '&:hover': { elevation: 4 },
+                      border: smtpConfig.provider === 'custom' ? '2px solid #1976d2' : '1px solid #e0e0e0'
+                    }}
+                    onClick={() => handleProviderSelect('custom')}
+                  >
+                    <CardContent sx={{ textAlign: 'center', py: 3 }}>
+                      <SettingsIcon sx={{ fontSize: 48, color: '#666', mb: 2 }} />
+                      <Typography variant="h6" gutterBottom>
+                        Custom SMTP Server
+                      </Typography>
+                      <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+                        Manual configuration for any email provider
+                      </Typography>
+                      <Chip label="Advanced" color="default" size="small" />
+                    </CardContent>
+                  </Card>
+                </Grid>
+              </Grid>
+            )}
+
+            {/* OAuth Progress */}
+            {smtpDialogs.oauthInProgress && (
+              <Card sx={{ mb: 4 }}>
+                <CardContent sx={{ textAlign: 'center', py: 4 }}>
+                  <CircularProgress sx={{ mb: 2 }} />
+                  <Typography variant="h6" gutterBottom>
+                    Authenticating with {smtpConfig.provider === 'gmail' ? 'Google' : 'Microsoft'}
+                  </Typography>
+                  <Typography variant="body2" color="text.secondary">
+                    Please complete the authentication in the popup window...
+                  </Typography>
+                </CardContent>
+              </Card>
+            )}
+
+            {/* Manual SMTP Configuration */}
+            {smtpConfig.provider === 'custom' && (
+              <Card sx={{ mb: 4 }}>
+                <CardContent>
+                  <Typography variant="h6" gutterBottom>
+                    SMTP Server Configuration
+                  </Typography>
+                  
+                  <Grid container spacing={3}>
+                    <Grid item xs={12} md={6}>
+                      <TextField
+                        fullWidth
+                        label="SMTP Host"
+                        placeholder="smtp.yourprovider.com"
+                        value={smtpConfig.smtpHost}
+                        onChange={(e) => handleSmtpConfigChange('smtpHost', e.target.value)}
+                        helperText="Your email provider's SMTP server"
+                      />
+                    </Grid>
+                    <Grid item xs={12} md={6}>
+                      <TextField
+                        fullWidth
+                        label="SMTP Port"
+                        type="number"
+                        value={smtpConfig.smtpPort}
+                        onChange={(e) => {
+                          const port = parseInt(e.target.value);
+                          handleSmtpConfigChange('smtpPort', port);
+                          
+                          // Auto-suggest encryption type based on port
+                          if (port === 465) {
+                            handleSmtpConfigChange('encryptionType', 'ssl');
+                          } else if (port === 587 || port === 2525) {
+                            handleSmtpConfigChange('encryptionType', 'tls');
+                          } else if (port === 25) {
+                            handleSmtpConfigChange('encryptionType', 'none');
+                          }
+                        }}
+                        helperText="Common ports: 587 (TLS), 465 (SSL), 25 (None)"
+                      />
+                    </Grid>
+                    <Grid item xs={12} md={6}>
+                      <FormControl fullWidth>
+                        <InputLabel>Encryption Type</InputLabel>
+                        <Select
+                          value={smtpConfig.encryptionType || 'tls'}
+                          onChange={(e) => handleSmtpConfigChange('encryptionType', e.target.value)}
+                          label="Encryption Type"
+                        >
+                          <MenuItem value="tls">
+                            <Box>
+                              <Typography variant="body2" fontWeight="bold">TLS/STARTTLS</Typography>
+                              <Typography variant="caption" color="text.secondary">
+                                Secure, widely supported (port 587)
+                              </Typography>
+                            </Box>
+                          </MenuItem>
+                          <MenuItem value="ssl">
+                            <Box>
+                              <Typography variant="body2" fontWeight="bold">SSL</Typography>
+                              <Typography variant="caption" color="text.secondary">
+                                Direct SSL connection (port 465)
+                              </Typography>
+                            </Box>
+                          </MenuItem>
+                          <MenuItem value="none">
+                            <Box>
+                              <Typography variant="body2" fontWeight="bold">None</Typography>
+                              <Typography variant="caption" color="text.secondary">
+                                No encryption - not recommended (port 25)
+                              </Typography>
+                            </Box>
+                          </MenuItem>
+                        </Select>
+                        <FormHelperText>
+                          {smtpConfig.encryptionType === 'tls' && 'Recommended for most providers'}
+                          {smtpConfig.encryptionType === 'ssl' && 'Direct SSL - good for legacy systems'}
+                          {smtpConfig.encryptionType === 'none' && 'Not secure - only for testing'}
+                        </FormHelperText>
+                      </FormControl>
+                    </Grid>
+                    <Grid item xs={12} md={6}>
+                      <TextField
+                        fullWidth
+                        label="Username"
+                        value={smtpConfig.smtpUser}
+                        onChange={(e) => handleSmtpConfigChange('smtpUser', e.target.value)}
+                        helperText="Your email address"
+                      />
+                    </Grid>
+                    <Grid item xs={12} md={6}>
+                      <TextField
+                        fullWidth
+                        label="Password"
+                        type={showPassword ? 'text' : 'password'}
+                        value={smtpConfig.smtpPassword}
+                        onChange={(e) => handleSmtpConfigChange('smtpPassword', e.target.value)}
+                        helperText="Your email password or app password"
+                        InputProps={{
+                          endAdornment: (
+                            <IconButton
+                              onClick={() => setShowPassword(!showPassword)}
+                              edge="end"
+                            >
+                              {showPassword ? <VisibilityOffIcon /> : <VisibilityIcon />}
+                            </IconButton>
+                          ),
+                        }}
+                      />
+                    </Grid>
+                    <Grid item xs={12}>
+                      <Alert severity="info" icon={<SecurityIcon />}>
+                        <AlertTitle>SSL/TLS Security</AlertTitle>
+                        <Box sx={{ mt: 1 }}>
+                          <Typography variant="body2" gutterBottom>
+                            <strong>TLS/STARTTLS (Port 587):</strong> Most secure and widely supported option
+                          </Typography>
+                          <Typography variant="body2" gutterBottom>
+                            <strong>SSL (Port 465):</strong> Direct SSL connection, good for legacy systems
+                          </Typography>
+                          <Typography variant="body2">
+                            <strong>None (Port 25):</strong> No encryption - only use for testing
+                          </Typography>
+                        </Box>
+                      </Alert>
+                    </Grid>
+                  </Grid>
+                </CardContent>
+              </Card>
+            )}
+
+            {/* Email Branding Configuration */}
+            {(smtpConfig.provider && smtpConfig.provider !== '') && (
+              <Card sx={{ mb: 4 }}>
+                <CardContent>
+                  <Typography variant="h6" gutterBottom>
+                    Email Branding
+                  </Typography>
+                  
+                  <Grid container spacing={3}>
+                    <Grid item xs={12} md={6}>
+                      <TextField
+                        fullWidth
+                        label="From Email"
+                        type="email"
+                        value={smtpConfig.fromEmail}
+                        onChange={(e) => handleSmtpConfigChange('fromEmail', e.target.value)}
+                        helperText="Email address that appears in the 'From' field"
+                      />
+                    </Grid>
+                    <Grid item xs={12} md={6}>
+                      <TextField
+                        fullWidth
+                        label="From Name"
+                        value={smtpConfig.fromName}
+                        onChange={(e) => handleSmtpConfigChange('fromName', e.target.value)}
+                        helperText="Name that appears in the 'From' field"
+                      />
+                    </Grid>
+                    <Grid item xs={12} md={6}>
+                      <TextField
+                        fullWidth
+                        label="Reply-To Email"
+                        type="email"
+                        value={smtpConfig.replyToEmail}
+                        onChange={(e) => handleSmtpConfigChange('replyToEmail', e.target.value)}
+                        helperText="Email address for replies (optional)"
+                      />
+                    </Grid>
+                    <Grid item xs={12} md={6}>
+                      <TextField
+                        fullWidth
+                        label="Company Name"
+                        value={smtpConfig.companyName}
+                        onChange={(e) => handleSmtpConfigChange('companyName', e.target.value)}
+                        helperText="Your company name for email templates"
+                      />
+                    </Grid>
+                  </Grid>
+                </CardContent>
+              </Card>
+            )}
+
+            {/* Action Buttons */}
+            {smtpConfig.provider && (
+              <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap' }}>
+                <Button
+                  variant="contained"
+                  startIcon={<RefreshIcon />}
+                  onClick={handleTestSmtpConnection}
+                  disabled={smtpConfig.connectionStatus === 'testing'}
+                >
+                  {smtpConfig.connectionStatus === 'testing' ? 'Testing...' : 'Test Connection'}
+                </Button>
+
+                {smtpConfig.connectionStatus === 'success' && (
+                  <Button
+                    variant="outlined"
+                    startIcon={<SendIcon />}
+                    onClick={() => setSmtpDialogs(prev => ({ ...prev, testEmail: true }))}
+                  >
+                    Send Test Email
+                  </Button>
+                )}
+
+                {smtpConfig.isConfigured && (
+                  <Button
+                    variant="outlined"
+                    color="error"
+                    onClick={() => {
+                      setSmtpConfig({
+                        provider: '',
+                        smtpHost: '',
+                        smtpPort: 587,
+                        smtpUser: '',
+                        smtpPassword: '',
+                        smtpSecure: true,
+                        encryptionType: 'tls',
+                        fromEmail: '',
+                        fromName: '',
+                        replyToEmail: '',
+                        companyName: settings.company,
+                        primaryColor: '#1976d2',
+                        isConfigured: false,
+                        connectionStatus: 'not_tested',
+                        lastTested: null,
+                      });
+                      setSmtpErrors([]);
+                    }}
+                  >
+                    Reset Configuration
+                  </Button>
+                )}
+              </Box>
+            )}
+          </Box>
+        </TabPanel>
+
+        {/* Security Settings */}
+        <TabPanel value={tabValue} index={3}>
           <Grid container spacing={3}>
             <Grid item xs={12}>
               <Alert severity="info" sx={{ mb: 3 }}>
@@ -427,24 +1121,32 @@ export default function SettingsPage() {
           </Grid>
         </TabPanel>
 
-        {/* Preferences */}
-        <TabPanel value={tabValue} index={3}>
-          <Grid container spacing={3}>
-            <Grid item xs={12} sm={6}>
-              <FormControlLabel
-                control={
-                  <Switch
-                    checked={settings.darkMode}
-                    onChange={(e) => handleSettingChange('darkMode', e.target.checked)}
-                  />
-                }
-                label="Dark Mode"
+        {/* Preferences Settings */}
+        <TabPanel value={tabValue} index={4}>
+          <Typography variant="h6" gutterBottom>
+            Display & Interface
+          </Typography>
+          <List>
+            <ListItem>
+              <ListItemText 
+                primary="Dark Mode" 
+                secondary="Switch to dark theme"
               />
-              <Typography variant="body2" color="text.secondary">
-                Use dark theme for better viewing in low light
-              </Typography>
-            </Grid>
-            
+              <ListItemSecondaryAction>
+                <Switch
+                  checked={settings.darkMode}
+                  onChange={(e) => handleSettingChange('darkMode', e.target.checked)}
+                />
+              </ListItemSecondaryAction>
+            </ListItem>
+          </List>
+
+          <Divider sx={{ my: 3 }} />
+
+          <Typography variant="h6" gutterBottom>
+            Regional Settings
+          </Typography>
+          <Grid container spacing={3}>
             <Grid item xs={12} sm={6}>
               <TextField
                 fullWidth
@@ -511,7 +1213,7 @@ export default function SettingsPage() {
         </TabPanel>
 
         {/* Company Settings */}
-        <TabPanel value={tabValue} index={4}>
+        <TabPanel value={tabValue} index={5}>
           <Typography variant="h6" gutterBottom>
             Company Information
           </Typography>
@@ -545,7 +1247,7 @@ export default function SettingsPage() {
         </TabPanel>
 
         {/* Data & Backup */}
-        <TabPanel value={tabValue} index={5}>
+        <TabPanel value={tabValue} index={6}>
           <Grid container spacing={3}>
             <Grid item xs={12}>
               <Typography variant="h6" gutterBottom>
@@ -642,6 +1344,61 @@ export default function SettingsPage() {
         <DialogActions>
           <Button onClick={() => setChangePasswordDialog(false)}>Cancel</Button>
           <Button variant="contained">Change Password</Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* Test Email Dialog */}
+      <Dialog 
+        open={smtpDialogs.testEmail} 
+        onClose={() => setSmtpDialogs(prev => ({ ...prev, testEmail: false }))} 
+        maxWidth="sm" 
+        fullWidth
+      >
+        <DialogTitle>
+          <Box sx={{ display: 'flex', alignItems: 'center' }}>
+            <SendIcon sx={{ mr: 1 }} />
+            Send Test Email
+          </Box>
+        </DialogTitle>
+        <DialogContent>
+          <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
+            Send a test email to verify your SMTP configuration is working correctly.
+          </Typography>
+          
+          <TextField
+            fullWidth
+            type="email"
+            label="Test Email Address"
+            placeholder="Enter email address to send test to"
+            value={testEmailAddress}
+            onChange={(e) => setTestEmailAddress(e.target.value)}
+            helperText="We'll send a test email to this address"
+            sx={{ mb: 2 }}
+          />
+
+          {smtpErrors.length > 0 && (
+            <Alert severity="error" sx={{ mb: 2 }}>
+              {smtpErrors.map((error, index) => (
+                <Typography key={index} variant="body2">{error}</Typography>
+              ))}
+            </Alert>
+          )}
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => {
+            setSmtpDialogs(prev => ({ ...prev, testEmail: false }));
+            setTestEmailAddress('');
+            setSmtpErrors([]);
+          }}>
+            Cancel
+          </Button>
+          <Button 
+            variant="contained" 
+            onClick={handleSendTestEmail}
+            disabled={!testEmailAddress}
+          >
+            Send Test Email
+          </Button>
         </DialogActions>
       </Dialog>
     </Container>
