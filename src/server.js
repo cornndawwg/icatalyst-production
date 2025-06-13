@@ -30,11 +30,10 @@ app.use((req, res, next) => {
 // CORS configuration for Railway deployment
 app.use(cors({
   origin: [
-    'https://icatalyst-frontend-production.up.railway.app',
-    'https://icatalyst-backend-production.up.railway.app',
-    'http://localhost:3002',
-    'http://localhost:3000',
-    'http://localhost:3001'
+    'https://icatalyst-frontend-production.up.railway.app',  // Frontend React app
+    'http://localhost:3002',  // Local Next.js development
+    'http://localhost:3000',  // Local frontend development
+    'http://localhost:3001'   // Local backend development
   ],
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],

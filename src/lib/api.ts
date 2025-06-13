@@ -3,12 +3,10 @@
  * Handles connection between Next.js frontend and Express backend
  */
 
-// Railway backend URL configuration
-const BACKEND_URL = process.env.NEXT_PUBLIC_API_URL || 
-  (process.env.NODE_ENV === 'production' 
-    ? 'https://icatalyst-production-production.up.railway.app'
-    : 'http://localhost:3001'
-  );
+// Use relative URLs that will be proxied to backend
+const BACKEND_URL = process.env.NODE_ENV === 'production' 
+  ? '' // Use relative URLs in production (proxied by frontend server)
+  : 'http://localhost:3001'; // Direct connection in development
 
 /**
  * Get the complete API URL for a given endpoint

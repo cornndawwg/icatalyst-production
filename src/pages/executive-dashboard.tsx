@@ -118,29 +118,15 @@ const ExecutiveDashboard: React.FC = () => {
   const fetchData = async (selectedTimeframe = timeframe) => {
     try {
       setLoading(true);
-      const response = await fetch(`/api/analytics/executive-summary?timeframe=${selectedTimeframe}`);
+      // Import API utility dynamically to avoid SSR issues
+      const { apiRequest } = await import('../lib/api');
+      const result = await apiRequest(`analytics/executive-summary?timeframe=${selectedTimeframe}`);
       
-      if (!response.ok) {
-        if (response.status === 404) {
-          // No data available for this timeframe
-          setData(null);
-          setError('No data available for the selected timeframe');
-          // @ts-ignore
-          setLastUpdated(new Date());
-          return;
-        }
-        const errorMessage = `HTTP ${response.status}: ${response.statusText}`;
-        // @ts-ignore - TypeScript Error constructor conflict with MUI
-        throw new Error(errorMessage);
-      }
-      
-      const result = await response.json();
       if (result.success) {
         setData(result.data);
         setError(null);
       } else {
         const errorMessage = result.error || 'Failed to load data';
-        // @ts-ignore - TypeScript Error constructor conflict with MUI
         throw new Error(errorMessage);
       }
       // @ts-ignore

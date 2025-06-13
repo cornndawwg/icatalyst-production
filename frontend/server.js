@@ -8,9 +8,9 @@ const __dirname = path.dirname(__filename);
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-// Backend API URL - use your existing Railway environment variable
+// Backend API URL - your Railway backend service
 const BACKEND_URL = process.env.NEXT_PUBLIC_API_URL || 
-  process.env.BACKEND_URL || 
+  'https://icatalyst-production-production.up.railway.app' || 
   'http://localhost:3001';
 
 // Parse JSON bodies
