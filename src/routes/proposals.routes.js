@@ -1,6 +1,10 @@
 const express = require('express');
 const router = express.Router();
 const prisma = require('../utils/prisma');
+const { optionalAuth } = require('../middleware/auth');
+
+// Apply optional auth to all routes (allows both authenticated and non-authenticated)
+router.use(optionalAuth);
 
 // GET /api/proposals?summary=true - Dashboard statistics
 // GET /api/proposals - List all proposals with search/filter

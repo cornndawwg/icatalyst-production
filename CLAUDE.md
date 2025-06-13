@@ -4,15 +4,16 @@
 
 Based on the console errors and user clarification:
 
-### **Current Railway Services:**
+### **Current Railway Services (CORRECTED):**
 - **Frontend**: `https://icatalyst-frontend-production.up.railway.app/`
-  - Serves the React Vite frontend application
-  - Should proxy `/api/*` requests to the backend
+  - Serves the **Next.js application** (main Smart Home CRM)
+  - Has its own `/api/*` routes that need database access
+  - Requires `DATABASE_URL` environment variable
   
 - **Backend**: `https://icatalyst-production-production.up.railway.app/`
-  - Serves the Express.js API and Next.js application
-  - Contains all API routes under `/api/*`
-  - Main Smart Home CRM with advanced features
+  - Serves the **Express.js API server**
+  - Contains additional API routes and services
+  - Also requires `DATABASE_URL` environment variable
 
 ## Console Errors Indicating Issues:
 
@@ -22,17 +23,23 @@ from origin 'https://icatalyst-frontend-production.up.railway.app'
 has been blocked by CORS policy: No 'Access-Control-Allow-Origin' header is present
 ```
 
-## Root Cause Analysis:
+## Root Cause Analysis (UPDATED):
 
-1. **Frontend proxy is working correctly** - React app calls `/api/*` 
-2. **Frontend server proxy** forwards to backend via hardcoded URL fallback
-3. **Environment variable missing**: `NEXT_PUBLIC_API_URL` not set in Railway frontend service
-4. **CORS configuration is correct** but proxy is using hardcoded URL instead of env var
+1. **Frontend is actually the Next.js app** - not just a React proxy
+2. **Next.js app has `/api/*` routes** that directly access the database
+3. **Missing DATABASE_URL**: Frontend service needs database access for its API routes
+4. **Previous CORS issue was secondary** - main issue is missing database connection
 
 ## Required Fixes:
 
-### 1. Railway Environment Variable (CRITICAL):
-Set in Railway frontend service dashboard:
+### 1. Railway Environment Variables (CRITICAL):
+Set in Railway **frontend** service dashboard:
+```
+DATABASE_URL=<your_postgresql_connection_string>
+JWT_SECRET=<your_jwt_secret>
+```
+
+Optional (if still needed for cross-service calls):
 ```
 NEXT_PUBLIC_API_URL=https://icatalyst-production-production.up.railway.app
 ```
@@ -77,19 +84,28 @@ smart-home-crm/
 - ✅ CORS correctly configured in backend
 - ✅ Frontend proxy correctly configured  
 - ✅ API clients correctly configured
-- ❌ **CRITICAL**: Missing `NEXT_PUBLIC_API_URL` environment variable in Railway frontend service
+- ✅ Database environment variables added to frontend
 - ✅ TypeScript compilation errors fixed
+- ✅ Next.js middleware created to proxy API requests
+- ❌ **Auth routes are test stubs** - no real authentication implementation
+- ❌ **Proposals API expects auth** but no auth middleware exists
 
 ## Next Steps:
 1. **Set Railway Environment Variable**: Add `NEXT_PUBLIC_API_URL=https://icatalyst-production-production.up.railway.app` to frontend service
 2. Redeploy frontend service after environment variable is set
 3. Test API connectivity - should resolve CORS errors
 
-## How to Set Railway Environment Variable:
+## How to Set Railway Environment Variables:
 1. Go to Railway dashboard
 2. Select the **frontend** service (`icatalyst-frontend-production`)
 3. Go to "Variables" tab
-4. Add new variable:
-   - Name: `NEXT_PUBLIC_API_URL`
-   - Value: `https://icatalyst-production-production.up.railway.app`
+4. Add these variables:
+   - Name: `DATABASE_URL`, Value: `<copy from backend service>`
+   - Name: `JWT_SECRET`, Value: `<copy from backend service>`
 5. Save and redeploy
+
+## To Copy Variables from Backend Service:
+1. Go to backend service variables
+2. Copy the `DATABASE_URL` value
+3. Copy the `JWT_SECRET` value  
+4. Add them to frontend service

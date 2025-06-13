@@ -30,12 +30,22 @@ export async function apiRequest<T = any>(
 ): Promise<T> {
   const url = getApiUrl(endpoint);
   
+  // Get auth token from localStorage if available
+  const token = typeof window !== 'undefined' ? localStorage.getItem('authToken') : null;
+  
+  const headers: HeadersInit = {
+    'Content-Type': 'application/json',
+    'Accept': 'application/json',
+    ...options.headers,
+  };
+  
+  // Add auth token if available
+  if (token) {
+    headers['Authorization'] = `Bearer ${token}`;
+  }
+  
   const defaultOptions: RequestInit = {
-    headers: {
-      'Content-Type': 'application/json',
-      'Accept': 'application/json',
-      ...options.headers,
-    },
+    headers,
     credentials: 'include', // Include cookies for Railway authentication
     ...options,
   };
@@ -129,11 +139,21 @@ export const API_ENDPOINTS = {
 export const apiCall = async (endpoint: string, options: RequestInit = {}) => {
   const url = `${BACKEND_URL}${endpoint.startsWith('/') ? endpoint : `/${endpoint}`}`;
   
+  // Get auth token from localStorage if available
+  const token = typeof window !== 'undefined' ? localStorage.getItem('authToken') : null;
+  
+  const headers: HeadersInit = {
+    'Content-Type': 'application/json',
+    ...options.headers,
+  };
+  
+  // Add auth token if available
+  if (token) {
+    headers['Authorization'] = `Bearer ${token}`;
+  }
+  
   const defaultOptions: RequestInit = {
-    headers: {
-      'Content-Type': 'application/json',
-      ...options.headers,
-    },
+    headers,
     credentials: 'include', // Include cookies for authentication
   };
 
