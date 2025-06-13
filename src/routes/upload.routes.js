@@ -4,10 +4,19 @@ const multer = require('multer');
 const path = require('path');
 const fs = require('fs');
 
+// Use /tmp directory for uploads in production (Railway has write permissions)
+const uploadsDir = process.env.NODE_ENV === 'production' 
+  ? path.join('/tmp', 'uploads')
+  : path.join(__dirname, '../../uploads');
+
 // Ensure uploads directory exists
-const uploadsDir = path.join(__dirname, '../../uploads');
-if (!fs.existsSync(uploadsDir)) {
-  fs.mkdirSync(uploadsDir, { recursive: true });
+try {
+  if (!fs.existsSync(uploadsDir)) {
+    fs.mkdirSync(uploadsDir, { recursive: true });
+  }
+} catch (error) {
+  console.error('Failed to create uploads directory:', error);
+  console.log('Using fallback tmp directory');
 }
 
 // Configure multer for file uploads

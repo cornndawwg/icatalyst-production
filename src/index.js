@@ -149,7 +149,17 @@ const propertiesRoutes = require('./routes/properties.routes');
 const productsRoutes = require('./routes/products.routes');
 const proposalsRoutes = require('./routes/proposals.routes');
 const proposalPersonasRoutes = require('./routes/proposal-personas.routes');
-const uploadRoutes = require('./routes/upload.routes');
+
+// Try to load upload routes - skip if permission issues
+let uploadRoutes = null;
+try {
+  uploadRoutes = require('./routes/upload.routes');
+  console.log('✅ Upload routes loaded successfully');
+} catch (error) {
+  console.error('⚠️ Upload routes failed to load (permission issue):', error.message);
+  console.log('📋 Continuing without upload functionality');
+}
+
 const portalRoutes = require('./routes/portal.routes');
 const testDbRoutes = require('./routes/test-db.routes');
 const voiceAIRoutes = require('./routes/voice-ai.routes');
@@ -161,7 +171,15 @@ app.use('/api/properties', propertiesRoutes);
 app.use('/api/products', productsRoutes);
 app.use('/api/proposals', proposalsRoutes);
 app.use('/api/proposal-personas', proposalPersonasRoutes);
-app.use('/api/upload', uploadRoutes);
+
+// Only mount upload routes if they loaded successfully
+if (uploadRoutes) {
+  app.use('/api/upload', uploadRoutes);
+  console.log('✅ Upload routes mounted at /api/upload');
+} else {
+  console.log('⚠️ Upload routes NOT mounted due to permission issues');
+}
+
 app.use('/api/portal', portalRoutes);
 app.use('/api/test-db', testDbRoutes);
 app.use('/api/voice-ai', voiceAIRoutes);
