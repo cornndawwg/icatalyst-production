@@ -33,10 +33,9 @@ export async function apiRequest<T = any>(
   // Get auth token from localStorage if available
   const token = typeof window !== 'undefined' ? localStorage.getItem('authToken') : null;
   
-  const headers: HeadersInit = {
+  const headers: Record<string, string> = {
     'Content-Type': 'application/json',
     'Accept': 'application/json',
-    ...options.headers,
   };
   
   // Add auth token if available
@@ -44,8 +43,14 @@ export async function apiRequest<T = any>(
     headers['Authorization'] = `Bearer ${token}`;
   }
   
+  // Merge with any provided headers
+  const finalHeaders = {
+    ...headers,
+    ...(options.headers || {}),
+  };
+  
   const defaultOptions: RequestInit = {
-    headers,
+    headers: finalHeaders,
     credentials: 'include', // Include cookies for Railway authentication
     ...options,
   };
@@ -142,9 +147,8 @@ export const apiCall = async (endpoint: string, options: RequestInit = {}) => {
   // Get auth token from localStorage if available
   const token = typeof window !== 'undefined' ? localStorage.getItem('authToken') : null;
   
-  const headers: HeadersInit = {
+  const headers: Record<string, string> = {
     'Content-Type': 'application/json',
-    ...options.headers,
   };
   
   // Add auth token if available
@@ -152,8 +156,14 @@ export const apiCall = async (endpoint: string, options: RequestInit = {}) => {
     headers['Authorization'] = `Bearer ${token}`;
   }
   
+  // Merge with any provided headers
+  const finalHeaders = {
+    ...headers,
+    ...(options.headers || {}),
+  };
+  
   const defaultOptions: RequestInit = {
-    headers,
+    headers: finalHeaders,
     credentials: 'include', // Include cookies for authentication
   };
 
