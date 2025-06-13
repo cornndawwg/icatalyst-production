@@ -314,6 +314,16 @@ model Proposal {
   createdAt       DateTime      @default(now())
   updatedAt       DateTime      @updatedAt
   
+  // Portal fields
+  portalToken     String?       @unique
+  portalExpiresAt DateTime?
+  portalViewCount Int           @default(0)
+  portalLastViewed DateTime?
+  clientStatus    String?       // pending, approved, rejected, changes-requested
+  clientFeedback  String?
+  approvedAt      DateTime?
+  approvedBy      String?
+  
   // Analytics Relations
   analyticsEvents AnalyticsEvent[]
   proposalMetrics ProposalMetrics[]
@@ -322,6 +332,7 @@ model Proposal {
   @@index([customerId])
   @@index([status])
   @@index([customerPersona])
+  @@index([portalToken])
   @@index([createdAt])
   @@index([createdBy])
 }
