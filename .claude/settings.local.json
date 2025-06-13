@@ -1,0 +1,13 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash",
+      "Edit",
+      "FileSystem",
+      "Git",
+      "WebFetch(domain:icatalyst-production-production.up.railway.app)",
+      "WebFetch(domain:icatalyst-frontend-production.up.railway.app)"
+    ],
+    "deny": []
+  }
+}
