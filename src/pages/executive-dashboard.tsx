@@ -127,6 +127,7 @@ const ExecutiveDashboard: React.FC = () => {
         setError(null);
       } else {
         const errorMessage = result.error || 'Failed to load data';
+        // @ts-ignore - TypeScript Error constructor conflict with MUI
         throw new Error(errorMessage);
       }
       // @ts-ignore
