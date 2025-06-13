@@ -17,12 +17,26 @@ import {
 } from '@mui/icons-material';
 
 const Dashboard = () => {
+  // Use environment-aware URLs
+  const getBaseUrl = () => {
+    if (typeof window !== 'undefined') {
+      const origin = window.location.origin;
+      // In production (Railway), use the same domain
+      if (origin.includes('railway.app')) {
+        return origin;
+      }
+      // In development, use port 3002 for main Next.js app
+      return origin.replace(':3000', ':3002');
+    }
+    return '';
+  };
+
   const handleCustomerManagement = () => {
-    window.open('http://localhost:3002/customers', '_blank');
+    window.open(`${getBaseUrl()}/customers`, '_blank');
   };
 
   const handleCustomerDashboard = () => {
-    window.open('http://localhost:3002', '_blank');
+    window.open(`${getBaseUrl()}`, '_blank');
   };
 
   return (
