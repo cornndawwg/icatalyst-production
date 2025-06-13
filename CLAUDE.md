@@ -86,9 +86,19 @@ smart-home-crm/
 - ✅ API clients correctly configured
 - ✅ Database environment variables added to frontend
 - ✅ TypeScript compilation errors fixed
-- ✅ Next.js middleware created to proxy API requests
+- ✅ **CRITICAL FIX**: Backend package.json start script corrected
 - ❌ **Auth routes are test stubs** - no real authentication implementation
 - ❌ **Proposals API expects auth** but no auth middleware exists
+
+## Root Cause Found:
+The backend service was running `npm start` which executed the Next.js app instead of the Express API server!
+
+**Fix Applied**: Changed `package.json` start script from `next start` to `node src/index.js`
+
+This means:
+- Backend will now serve the Express API with /api/proposals routes
+- Frontend will continue serving the Next.js CRM app
+- The 404 errors should be resolved
 
 ## Next Steps:
 1. **Set Railway Environment Variable**: Add `NEXT_PUBLIC_API_URL=https://icatalyst-production-production.up.railway.app` to frontend service
